@@ -1,67 +1,852 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Decks 4 Cancer</title>
+  <title>Decks 4 Cancer | Helping Deck Cancer in the Face</title>
 
-    <style>
-        body {
-            margin: 0;
-            background: #000000;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-        }
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-        main {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 30px;
-            box-sizing: border-box;
-        }
+    :root {
+     --cyan: #00D7F2;
+      --pink: #FF2DA6;
+      --yellow: #FFC107;
+      --black: #000000;
+      --white: #FFFFFF;
+      --dark: #101010;
+    }
 
-        h1 {
-            margin: 0;
-            font-size: clamp(3rem, 10vw, 8rem);
-            line-height: 0.9;
-        }
+    html {
+      scroll-behavior: smooth;
+    }
 
-        .decks {
-            color: #00D7F2;
-        }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+    }
 
-        .four {
-            color: #FF2DA6;
-        }
+    /* NAVIGATION */
 
-        .cancer {
-            color: #FFC107;
-        }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.95);
+      border-bottom: 1px solid #222;
+    }
 
-        p {
-            margin-top: 30px;
-            font-size: clamp(1.1rem, 2vw, 1.6rem);
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-    </style>
+    nav {
+      max-width: 1200px;
+      margin: auto;
+      padding: 18px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 900;
+      text-decoration: none;
+      color: var(--white);
+    }
+
+    .nav-logo .blue {
+      color: var(--blue);
+    }
+
+    .nav-logo .pink {
+      color: var(--pink);
+    }
+
+    .nav-logo .yellow {
+      color: var(--yellow);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .nav-links a:hover {
+      color: var(--pink);
+    }
+
+    /* HERO */
+
+    .hero {
+      min-height: 85vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 30px;
+    }
+
+    .hero-content {
+      max-width: 1100px;
+    }
+
+    .hero-logo {
+      font-size: clamp(3.5rem, 10vw, 8rem);
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: -5px;
+      text-transform: uppercase;
+    }
+/* SKATEBOARD KICKFLIP ANIMATION */
+
+.skateboard-stage {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 350px;
+    margin: 0 auto;
+    perspective: 1200px;
+}
+.skateboard {
+  display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 800px;
+    height: 180px;
+    transform: translate(-50%, -50%);
+    transform-style: preserve-3d;
+    animation: kickflip 2.5s ease-in-out 1 forwards;
+}
+.skateboard-deck {
+    transform-style: preserve-3d;
+}
+
+.skateboard-deck {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #222;
+    border: 5px solid #555;
+    border-radius: 90px;
+}
+.skateboard-front,
+.skateboard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 90px;
+    backface-visibility: hidden;
+}
+
+.skateboard-front {
+    background: #181818;
+    border: 5px solid #444;
+}
+
+.skateboard-back {
+    background: #f2f2f2;
+    border: 5px solid #999;
+   transform: translateZ(-12px) rotateX(180deg);
+}
+/* SKATEBOARD TRUCKS AND WHEELS */
+
+.truck {
+    position: absolute;
+    top: 50%;
+    width: 45px;
+    height: 110px;
+    background: linear-gradient(90deg, #777, #ddd, #777);
+    border: 3px solid #555;
+    border-radius: 12px;
+    transform: translateY(-50%) translateZ(-35px);
+}
+
+.truck-left {
+    left: 18%;
+}
+
+.truck-right {
+    right: 18%;
+}
+
+.wheel {
+    position: absolute;
+    width: 42px;
+    height: 42px;
+    background: #222;
+    border: 5px solid #888;
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.wheel-top {
+    top: -28px;
+}
+
+.wheel-bottom {
+    bottom: -28px;
+}
+
+@keyframes kickflip {
+    0% {
+        transform: translate(-50%, -50%) rotateX(0deg);
+    }
+
+    25% {
+        transform: translate(-50%, -65%) rotateX(90deg);
+    }
+
+    50% {
+        transform: translate(-50%, -75%) rotateX(180deg);
+    }
+
+    75% {
+        transform: translate(-50%, -65%) rotateX(270deg);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotateX(360deg);
+    }
+}
+
+    .hero-logo .blue {
+    color: var(--cyan);
+}
+
+    .hero-logo .pink {
+      color: var(--pink);
+    }
+
+    .hero-logo .yellow {
+      color: var(--yellow);
+    }
+
+    .tagline {
+      margin-top: 30px;
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .hero-text {
+      max-width: 700px;
+      margin: 25px auto 0;
+      color: #cccccc;
+      font-size: 1.05rem;
+    }
+
+    .hero-buttons {
+      margin-top: 35px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 14px 25px;
+      border: 2px solid var(--white);
+      color: var(--white);
+      text-decoration: none;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .button-primary {
+      background: var(--pink);
+      border-color: var(--pink);
+      color: var(--black);
+    }
+
+    /* INTRO */
+
+    .intro {
+      background: var(--dark);
+      padding: 90px 30px;
+      text-align: center;
+    }
+
+    .section-inner {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .section-label {
+      color: var(--pink);
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      margin-bottom: 25px;
+      text-transform: uppercase;
+    }
+
+    .intro p {
+      color: #cccccc;
+      font-size: 1.1rem;
+    }
+
+    .intro .section-inner {
+    max-width: 1000px;
+}
+
+.intro p {
+    max-width: 760px;
+    margin: 0 auto 24px;
+    line-height: 1.8;
+    text-align: left;
+}
+
+.intro h2 {
+    max-width: 760px;
+    margin: 70px auto 30px;
+    text-align: left;
+}
+
+.intro .section-label {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+
+.intro strong {
+    color: var(--white);
+}
+
+.intro h2:first-of-type {
+    margin-top: 15px;
+}
+.intro h2:last-of-type {
+    font-size: clamp(1.8rem, 3.5vw, 2.7rem);
+    line-height: 1.15;
+    color: var(--yellow);
+    margin-top: 80px;
+}
+
+    /* DECK SECTION */
+
+    .decks {
+      padding: 90px 30px;
+      text-align: center;
+    }
+
+    .deck-placeholder {
+      margin: 50px auto 0;
+      max-width: 850px;
+      padding: 70px 30px;
+      border: 2px dashed #333;
+      background: #080808;
+    }
+
+    .deck-placeholder h3 {
+      color: var(--yellow);
+      font-size: 1.7rem;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    .deck-placeholder p {
+      color: #999;
+    }
+
+    /* SUPPORT */
+
+    .support {
+      background: var(--yellow);
+      color: var(--black);
+      padding: 80px 30px;
+      text-align: center;
+    }
+
+    .support h2 {
+      margin-bottom: 15px;
+    }
+
+    .support p {
+    max-width: 720px;
+    margin: 0 auto 22px;
+    font-weight: normal;
+    line-height: 1.7;
+}
+
+.support-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 35px;
+}
+
+.support-button {
+    display: inline-block;
+    padding: 16px 38px;
+    border-radius: 50px;
+    background: var(--black);
+    color: var(--white);
+    border: 2px solid var(--black);
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: 0.2s ease;
+}
+.support-button {
+    position: relative;
+}
+.support-button::before,
+.support-button::after {
+    content: "••\A••";
+    white-space: pre;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--yellow);
+    font-size: 8px;
+    line-height: 7px;
+    letter-spacing: 3px;
+}
+
+.support-button::before {
+    left: 12px;
+}
+
+.support-button::after {
+    right: 9px;
+}
+.support-button:hover {
+    transform: translateY(-3px);
+}
+
+.support-button-cyan {
+    background: var(--black);
+    border-color: var(--black);
+    color: var(--cyan);
+}
+
+.support-button-pink {
+    background: var(--black);
+    border-color: var(--black);
+    color: var(--pink);
+}
+
+.support-button-yellow {
+    background: var(--black);
+    border-color: var(--black);
+    color: var(--yellow);
+}
+/* CREATE A DECK */
+
+.create-deck {
+    background: var(--black);
+    color: var(--white);
+    padding: 90px 30px;
+}
+
+.create-deck .section-inner {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.create-deck .section-label {
+    color: var(--cyan);
+    font-size: 0.85rem;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+}
+
+.create-deck h2 {
+    color: var(--cyan);
+    font-size: 3rem;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+}
+
+.create-deck p {
+    max-width: 720px;
+    margin-bottom: 22px;
+    line-height: 1.7;
+}
+
+.artist-questions {
+    margin-top: 45px;
+    padding-left: 30px;
+}
+
+.artist-questions label {
+    display: block;
+    font-size: 1.25rem;
+    line-height: 1.5;
+    font-weight: bold;
+    color: var(--cyan);
+    margin-bottom: 12px;
+}
+
+.artist-questions textarea {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    min-height: 120px;
+    padding: 15px;
+    margin-bottom: 30px;
+    background: var(--dark);
+    color: var(--white);
+    border: 2px solid var(--cyan);
+    border-radius: 8px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+}
+
+.artist-questions textarea:focus {
+    border-color: var(--pink);
+}
+    /* FOOTER */
+
+    footer {
+      padding: 40px 30px;
+      text-align: center;
+      color: #777;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 750px) {
+      nav {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .nav-links {
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .hero-logo {
+        letter-spacing: -2px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-    <main>
-        <h1>
-            <span class="decks">DECKS</span>
-            <span class="four">4</span>
-            <span class="cancer">CANCER</span>
-        </h1>
 
-        <p>Helping deck cancer in the face.</p>
-    </main>
+<header>
+  <nav>
+    <a href="#" class="nav-logo">
+      <span class="blue">DECKS</span><span class="pink">4</span><span class="yellow">CANCER</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#story">Our Story</a></li>
+      <li><a href="#decks">The Decks</a></li>
+      <li><a href="#support">Support Us</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="hero-content">
+<div class="skateboard-stage">
+    <div class="skateboard">
+        <div class="skateboard-deck">
+            <div class="skateboard-front"></div>
+        <div class="skateboard-back">
+    <div class="truck truck-left">
+        <div class="wheel wheel-top"></div>
+        <div class="wheel wheel-bottom"></div>
+    </div>
+
+    <div class="truck truck-right">
+        <div class="wheel wheel-top"></div>
+        <div class="wheel wheel-bottom"></div>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+      <<div class="hero-logo">
+    <img src="decks4cancer-logo.svg" alt="Decks 4 Cancer Logo" style="width: 100%; max-width: 650px; height: auto;">
+</div>
+
+      <div class="tagline">
+        Helping Deck Cancer in the Face
+      </div>
+
+      <p class="hero-text">
+  Bringing art, skate culture and communities together
+  to create something unique in the fight against cancer.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="#story" class="button button-primary">Our Story</a>
+        <a href="#decks" class="button">Explore the Decks</a>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="intro" id="story">
+  <div class="section-inner">
+
+    <div class="section-label">Why We Exist</div>
+
+    <h2>This One's Personal.</h2>
+
+    <p>
+      Decks 4 Cancer was born from seeing first-hand what cancer can do to a family.
+    </p>
+
+    <p>
+      My mum, Dorothy, has spent a decade fighting breast cancer. What began with a
+      small tumour eventually became a fight for her life. In late 2022, our family
+      received the call that Mum may have only three weeks to live and wasn't expected
+      to see Christmas.
+    </p>
+
+    <p>
+      <strong>She proved that timeline wrong.</strong>
+    </p>
+
+    <p>
+      Her journey has had more ups and downs than I could ever fit on this page.
+      There were too many hospital visits, incredibly difficult periods and times
+      when we genuinely didn't know what was going to happen next. But she kept fighting.
+    </p>
+
+    <p>
+      In 2026, Mum was finally given the news we'd spent years hoping for —
+      <strong>she was cancer-free.</strong> She still takes chemotherapy tablets and
+      undergoes regular checks, but after everything she'd been through, hearing those
+      words meant more than I can put into words.
+    </p>
+
+    <h2>Cancer Wasn't Done With Our Family.</h2>
+
+    <p>
+      Just a few days before Christmas in 2022, my nine-year-old nephew Asher suffered
+      a seizure. What followed was the discovery of a large tumour near his pituitary
+      gland, along with many more tumours around his brain and down his spine.
+    </p>
+
+    <p>
+      Asher went through treatment and fought incredibly hard, but on
+      <strong>10 March 2024</strong>, we lost him. He was just 10 years old.
+    </p>
+
+    <p>
+      <strong>
+        Asher's fight, the impact his loss had on our family, and the countless lives
+        he touched are things that will stay with us forever.
+      </strong>
+    </p>
+
+    <h2>Why Decks 4 Cancer</h2>
+
+    <p>
+      Mum's decade-long fight and Asher's journey showed me cancer from two very
+      different sides.
+    </p>
+
+    <p>
+      <strong>They're the reason Decks 4 Cancer exists.</strong>
+    </p>
+
+    <p>
+      The idea is to bring together artists, musicians, athletes and communities to
+      create one-of-a-kind skateboard decks. A deck might begin as a blank canvas in
+      the hands of an artist and later become something even more unique through
+      signatures, collaborations and the people who become part of its story.
+    </p>
+
+    <p>
+      Those decks can then be used to raise money with the goal of helping people
+      facing their own cancer journey.
+    </p>
+
+    <p>
+      <strong>We're only at the beginning.</strong>
+    </p>
+
+    <p>
+      But if we can take art, skate culture and the support of some incredible people
+      and turn it into something that helps someone going through one of the hardest
+      periods of their life, then we're doing what Decks 4 Cancer was created to do.
+    </p>
+
+    <h2>We Want To Turn Something Devastating Into Something That Can Do Some Good.</h2>
+
+  </div>
+</section>
+
+  <section class="decks" id="decks">
+    <div class="section-inner">
+
+      <div class="section-label">The Decks</div>
+
+      <h2>Every Deck Has A Story.</h2>
+
+      <div class="deck-placeholder">
+    <h3>It Starts With A Blank Deck.</h3>
+
+    <p>
+        The blank decks are donated by Folklore Skateboards, engraved with the
+        Decks 4 Cancer logo and artist/s name, and sent out to artists who turn them into
+        one-of-a-kind pieces of art.
+    </p>
+
+    <p>
+        From there, a deck's story might continue through another artist, a musician,
+        an athlete, a band, or someone else willing to put their name on it and make
+        it something that can't be replicated —
+    a genuine collectable with its own story.
+    </p>
+
+    <p>
+        Some decks may be created by a single artist. Others may pass through
+        multiple hands before they're finished. <strong>No two will be the same.</strong>
+    </p>
+
+    <h3>Our First Decks Are Coming Soon.</h3>
+
+    <p>
+        As they're completed, you'll be able to explore each deck here, meet the
+        people behind it, follow its story and see how you can get involved.
+    </p>
+</div>
+
+    </div>
+  </section>
+
+  <section class="support" id="support">
+    <div class="section-inner">
+
+        <h2>Help Us Deck Cancer In The Face.</h2>
+
+        <p>
+            <strong>Decks 4 Cancer is only getting started.</strong>
+        </p>
+
+        <p>
+            What began as an idea is slowly becoming something real. With the support
+            we've received so far, we're building the foundations and preparing to send
+            the first Decks 4 Cancer decks out to artists.
+        </p>
+
+        <p>
+            There are plenty of ways to help us keep building.
+        </p>
+
+        <p>
+            If you're an artist who wants to create a deck, a musician, athlete or
+            public figure willing to become part of a deck's story, a business interested
+            in supporting the project, or someone who simply wants to follow, share or
+            contribute to what we're building — we'd love to hear from you.
+        </p>
+
+        <p>
+            <strong>
+                We're still at the beginning, and every bit of support helps us take
+                the next step.
+            </strong>
+        </p>
+
+        <p>
+            Follow the journey, spread the word, get involved, or help us turn these
+            first decks into something that can make a real difference.
+        </p>
+<div class="support-actions">
+<a href="#create-deck" class="support-button support-button-cyan">Create A Deck</a>
+<a href="#" class="support-button support-button-pink">Partner With Us</a>
+<a href="#" class="support-button support-button-yellow">Follow The Decks</a>
+</div>
+
+
+    </div>
+</section>
+<section class="create-deck" id="create-deck">
+    <div class="section-inner">
+
+        <div class="section-label">FOR ARTISTS</div>
+
+        <h2>CREATE A DECK.</h2>
+
+        <p>
+            Want to put your art on a Decks 4 Cancer deck?
+        </p>
+
+        <p>
+    We'll send you a blank skateboard deck donated by Folklore Skateboards,
+with the Decks 4 Cancer logo and your name engraved on the grip tape side, ready for you to make your own.
+    You'll also receive a Decks 4 Cancer welcome pack, including a Cancer-Pink
+    POSCA paint marker donated by Ironlak/Sprayism to use on your deck.
+</p>
+
+        <p>
+            Before we get started, we'd love to learn a little about you, your art, and what inspires you.
+        </p>
+
+        <div class="artist-questions">
+
+     <label for="artist-style">
+    1. If your art style had a voice or personality, how would you describe it?
+</label>
+
+<textarea id="artist-style" name="artist-style" rows="4" placeholder="Tell us about your style..."></textarea>
+
+<label for="artist-why">
+    2. What first got you into creating art, and what keeps you inspired?
+</label>
+
+<textarea id="artist-why" name="artist-why" rows="4" placeholder="Tell us why you'd like to be involved..."></textarea>
+
+<label for="artist-idea">
+    3. Do you already have an idea or vibe in mind for your deck? Or are you just gonna let it flow?
+</label>
+
+<textarea id="artist-idea" name="artist-idea" rows="4" placeholder="Tell us what you're thinking..."></textarea>
+        </div>
+
+    </div>
+</section>
+</main>
+
+<footer>
+  <footer>
+  Decks 4 Cancer • Australia
+</footer>
+</footer>
+<script type="module" src="./skateboard3d.js"></script>
 </body>
 </html>
