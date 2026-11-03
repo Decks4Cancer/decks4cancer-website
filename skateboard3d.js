@@ -48,14 +48,19 @@ scene.add(fillLight);
 
 const rideGroup = new THREE.Group();
 const boardPivot = new THREE.Group();
+const boardFlipPivot = new THREE.Group();
 const skateboard = new THREE.Group();
 const rollingWheels = [];
 let skaterRig = null;
 let frontFoot = null;
+let rearFoot = null;
 let frontFootRestPosition = null;
+let rearFootRestPosition = null;
 boardPivot.position.x = -2.65 * 1.2;
-skateboard.position.x = 2.65 * 1.2;
-boardPivot.add(skateboard);
+boardFlipPivot.position.x = 2.65 * 1.2;
+skateboard.position.x = 0;
+boardFlipPivot.add(skateboard);
+boardPivot.add(boardFlipPivot);
 rideGroup.add(boardPivot);
 scene.add(rideGroup);
 
@@ -305,7 +310,14 @@ function addSilhouetteSkater() {
     addJoint([-1.36, 1.36, depth], 0.11);
     addJoint([1.45, 1.48, depth], 0.11);
 
-    addSilhouetteSegment(skater, [rearFootX - 0.16, 0.22, depth], [rearFootX + 0.16, 0.16, depth + 0.01], 0.065, silhouetteAccentMaterial);
+    rearFoot = addSilhouetteSegment(
+        skater,
+        [rearFootX - 0.16, 0.22, depth],
+        [rearFootX + 0.16, 0.16, depth + 0.01],
+        0.065,
+        silhouetteAccentMaterial
+    );
+    rearFootRestPosition = rearFoot.position.clone();
     frontFoot = addSilhouetteSegment(
         skater,
         [frontFootX - 0.16, 0.2, depth],
@@ -466,6 +478,10 @@ let trickStarted = false;
 let trickStartTime = 0;
 let previousRideX = -7.2;
 const riderBaseY = -0.47;
+const boardScale = 1.2;
+const boardHalfLength = 4.45 * boardScale;
+const truckOffset = 2.65 * boardScale;
+const wheelBottomY = -(0.68 + 0.35) * boardScale;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -490,61 +506,105 @@ function animate() {
     skaterRig.rotation.z = Math.sin(time * 1.7) * 0.025;
 
     if (!trickStarted) {
-        rideGroup.position.y =
-            Math.sin(time * 1.5) * 0.08;
+        rideGroup.position.y = Math.sin(time * 1.5) * 0.08;
         boardPivot.position.y = 0;
         boardPivot.rotation.x = restingRotation.x;
         boardPivot.rotation.y = restingRotation.y;
         boardPivot.rotation.z = restingRotation.z;
+        boardFlipPivot.rotation.x = 0;
+        boardFlipPivot.rotation.y = 0;
+        boardFlipPivot.rotation.z = 0;
         skaterRig.position.y = riderBaseY;
         skaterRig.scale.y = skaterRig.scale.x;
+        frontFoot.position.copy(frontFootRestPosition);
+        rearFoot.position.copy(rearFootRestPosition);
     } else {
         const elapsed = time - trickStartTime;
-        const duration = 3.4;
+        const duration = 3.8;
         const progress = Math.min(elapsed / duration, 1);
-        const smoothstep = (value) => value * value * (3 - 2 * value);
+        const smoothstep = (v) => v * v * (3 - 2 * v);
         const phase = (start, end) =>
             smoothstep(Math.min(Math.max((progress - start) / (end - start), 0), 1));
-        const crouch = phase(0.02, 0.2) * (1 - phase(0.2, 0.42));
-        const pop = phase(0.18, 0.3);
-        const ascent = phase(0.25, 0.43);
-        const rotationProgress = phase(0.34, 0.75);
-        const catchEase = phase(0.75, 0.84);
-        const landingCompression = 1 - phase(0.9, 1);
-        const boardLift = 0.78 * phase(0.28, 0.78) * (1 - phase(0.78, 0.98));
-        const boardPitch = 0.14 * pop * (1 - phase(0.28, 0.48));
-        const riderFlight =
-            2.6 * ascent * (1 - phase(0.63, 0.82));
-        const flickClearance = rotationProgress * (1 - catchEase);
-        const noseRise = Math.sin(boardPitch) * (4.45 * 1.2);
-        const footCompression = crouch * 0.16 + landingCompression * 0.08;
 
+        // Phase ordering: crouch → pop → lift → flick → rotation → catch → descend → land
+        const crouch = phase(0.03, 0.14) * (1 - phase(0.14, 0.22));
+        const pop = phase(0.14, 0.22);
+        const lift = phase(0.20, 0.32);
+        const flickSlide = phase(0.22, 0.32);
+        const flickKick = phase(0.30, 0.36);
+        const rotationProgress = phase(0.34, 0.72);
+        const catchEase = phase(0.72, 0.80);
+        const descent = phase(0.78, 0.94);
+        const landingCompression = 1 - phase(0.90, 1.0);
+
+        // Board pop pitch: nose rises, tail strikes ground
+        // Pivot at rear truck. Tail extends behind pivot by tailLever.
+        // Positive z rotation lifts nose, drops tail toward ground.
+        const tailLever = boardHalfLength - truckOffset;
+        const popAngle = pop * (1 - phase(0.22, 0.32)) * 0.6;
+
+        // Board vertical: stays at ground during pop, then lifts with rider
+        const boardAirborne = lift * (1 - descent) * 2.2;
+
+        // Board flip rotation: starts AFTER flick, completes before catch
+        const flipRotation = rotationProgress * Math.PI * 2;
+
+        // Rider vertical: crouch lowers, then jumps above board
+        const riderJump = lift * (1 - descent) * 2.8;
+        const crouchDrop = crouch * 0.5;
+        const landingDrop = landingCompression * 0.25;
+
+        // Front foot: slides diagonally up the grip tape toward nose, then flicks off
+        const footSlideX = flickSlide * 0.3;
+        const footSlideY = flickSlide * 0.12;
+        const footFlickX = flickKick * 0.15;
+        const footFlickY = -flickKick * 0.06;
+        const footReturn = catchEase;
+        const frontFootOffsetX = (footSlideX + footFlickX) * (1 - footReturn);
+        const frontFootOffsetY = (footSlideY + footFlickY) * (1 - footReturn);
+
+        // Rear foot: stays on tail during pop, then lifts with rider
+        const rearFootLift = (lift - pop * 0.3) * (1 - catchEase) * 0.3;
+        const rearFootOffsetY = Math.max(0, rearFootLift);
+
+        // Apply board transforms
         rideGroup.position.y = 0;
-        boardPivot.position.y = boardLift;
-        boardPivot.rotation.x =
-            restingRotation.x + rotationProgress * Math.PI * 2;
+        boardPivot.position.y = boardAirborne;
+        boardPivot.rotation.x = restingRotation.x;
         boardPivot.rotation.y = restingRotation.y;
-        boardPivot.rotation.z = boardPitch;
+        boardPivot.rotation.z = popAngle;
+        boardFlipPivot.rotation.x = flipRotation;
+        boardFlipPivot.rotation.y = 0;
+        boardFlipPivot.rotation.z = 0;
 
+        // Apply rider transforms
         skaterRig.position.y =
-            riderBaseY + footCompression + boardLift + riderFlight;
+            riderBaseY - crouchDrop + boardAirborne + riderJump + landingDrop;
         skaterRig.scale.y =
-            skaterRig.scale.x * (1 - crouch * 0.14 - landingCompression * 0.06);
+            skaterRig.scale.x * (1 - crouch * 0.12 - landingCompression * 0.08);
         skaterRig.rotation.z =
-            Math.sin(time * 4.2) * 0.035 + (1 - crouch) * 0.018;
+            Math.sin(time * 4.2) * 0.035 + crouch * 0.015;
+
+        // Apply foot positions (in skater local space, pre-scale)
+        const invScale = 1 / skaterRig.scale.x;
         frontFoot.position.x =
-            frontFootRestPosition.x + flickClearance * 0.12;
+            frontFootRestPosition.x + frontFootOffsetX;
         frontFoot.position.y =
-            frontFootRestPosition.y + noseRise / skaterRig.scale.x + flickClearance * 0.14;
+            frontFootRestPosition.y + frontFootOffsetY * invScale;
+        rearFoot.position.x = rearFootRestPosition.x;
+        rearFoot.position.y =
+            rearFootRestPosition.y + rearFootOffsetY * invScale;
 
         if (progress >= 1) {
             trickStarted = false;
             boardPivot.position.y = 0;
             boardPivot.rotation.x = restingRotation.x;
             boardPivot.rotation.z = restingRotation.z;
+            boardFlipPivot.rotation.x = 0;
             skaterRig.position.y = riderBaseY;
             skaterRig.scale.y = skaterRig.scale.x;
             frontFoot.position.copy(frontFootRestPosition);
+            rearFoot.position.copy(rearFootRestPosition);
         }
     }
 
