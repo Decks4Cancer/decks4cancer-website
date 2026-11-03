@@ -50,6 +50,8 @@ const rideGroup = new THREE.Group();
 const skateboard = new THREE.Group();
 const rollingWheels = [];
 let skaterRig = null;
+let frontFoot = null;
+let frontFootRestPosition = null;
 rideGroup.add(skateboard);
 scene.add(rideGroup);
 
@@ -300,7 +302,14 @@ function addSilhouetteSkater() {
     addJoint([1.45, 1.48, depth], 0.11);
 
     addSilhouetteSegment(skater, [rearFootX - 0.16, 0.22, depth], [rearFootX + 0.16, 0.16, depth + 0.01], 0.065, silhouetteAccentMaterial);
-    addSilhouetteSegment(skater, [frontFootX - 0.16, 0.2, depth], [frontFootX + 0.16, 0.14, depth + 0.01], 0.065, silhouetteAccentMaterial);
+    frontFoot = addSilhouetteSegment(
+        skater,
+        [frontFootX - 0.16, 0.2, depth],
+        [frontFootX + 0.16, 0.14, depth + 0.01],
+        0.065,
+        silhouetteAccentMaterial
+    );
+    frontFootRestPosition = frontFoot.position.clone();
 
     skater.scale.setScalar(riderScale);
     skater.position.y = -0.47;
@@ -452,6 +461,7 @@ const clock = new THREE.Clock();
 let trickStarted = false;
 let trickStartTime = 0;
 let previousRideX = -7.2;
+const riderBaseY = -0.47;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -478,31 +488,59 @@ function animate() {
     if (!trickStarted) {
         rideGroup.position.y =
             Math.sin(time * 1.5) * 0.08;
-
+        skateboard.position.y = 0;
         skateboard.rotation.x = restingRotation.x;
         skateboard.rotation.y = restingRotation.y;
         skateboard.rotation.z = restingRotation.z;
+        skaterRig.position.y = riderBaseY;
+        skaterRig.scale.y = skaterRig.scale.x;
     } else {
         const elapsed = time - trickStartTime;
-        const duration = 2.4;
+        const duration = 3.1;
         const progress = Math.min(elapsed / duration, 1);
+        const smoothstep = (value) => value * value * (3 - 2 * value);
+        const crouchProgress = Math.min(progress / 0.22, 1);
+        const crouchRelease = Math.max((progress - 0.22) / 0.18, 0);
+        const crouch = progress < 0.22
+            ? smoothstep(crouchProgress)
+            : 1 - smoothstep(Math.min(crouchRelease, 1));
+        const jumpProgress = Math.min(Math.max((progress - 0.22) / 0.32, 0), 1);
+        const jump = smoothstep(jumpProgress);
+        const rotationProgress = Math.min(Math.max((progress - 0.34) / 0.42, 0), 1);
+        const rotation = smoothstep(rotationProgress);
+        const catchProgress = Math.min(Math.max((progress - 0.76) / 0.12, 0), 1);
+        const catchEase = smoothstep(catchProgress);
+        const landingProgress = Math.min(Math.max((progress - 0.88) / 0.12, 0), 1);
+        const landingCompression = 1 - smoothstep(landingProgress);
+        const flickClearance = rotation * (1 - catchEase);
 
-        const eased =
-            progress * progress * (3 - 2 * progress);
-
+        rideGroup.position.y = 0;
+        skateboard.position.y = jump * (1 - rotationProgress) * 0.65;
         skateboard.rotation.x =
-            restingRotation.x + eased * Math.PI * 2;
-
+            restingRotation.x + rotation * Math.PI * 2;
         skateboard.rotation.y = restingRotation.y;
         skateboard.rotation.z = restingRotation.z;
 
-        rideGroup.position.y =
-            Math.sin(progress * Math.PI) * 1.0;
+        const airborneHeight = 2.8 * jump * (1 - catchEase);
+        const landingDrop = landingCompression * 0.18;
+        skaterRig.position.y =
+            riderBaseY - crouch * 0.62 + airborneHeight + landingDrop;
+        skaterRig.scale.y =
+            skaterRig.scale.x * (1 - crouch * 0.08 - landingCompression * 0.06);
+        skaterRig.rotation.z =
+            Math.sin(time * 4.2) * 0.035 + crouch * 0.018;
+        frontFoot.position.x =
+            frontFootRestPosition.x + flickClearance * 0.12;
+        frontFoot.position.y =
+            frontFootRestPosition.y + flickClearance * 0.14;
 
         if (progress >= 1) {
             trickStarted = false;
+            skateboard.position.y = 0;
             skateboard.rotation.x = restingRotation.x;
-            rideGroup.position.y = 0;
+            skaterRig.position.y = riderBaseY;
+            skaterRig.scale.y = skaterRig.scale.x;
+            frontFoot.position.copy(frontFootRestPosition);
         }
     }
 
