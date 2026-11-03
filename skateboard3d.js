@@ -15,8 +15,8 @@ const camera = new THREE.PerspectiveCamera(
     40, 800 / 350, 0.1, 100
 );
 
-camera.position.set(2.8, -4.8, 11.5);
-camera.lookAt(0, 0, 0.65);
+camera.position.set(2.3, -4.2, 9.2);
+camera.lookAt(0, 0, 0.75);
 
 const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -24,7 +24,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(800, 350);
+renderer.setSize(1000, 440);
 renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -47,6 +47,9 @@ scene.add(fillLight);
 // SKATEBOARD
 
 const skateboard = new THREE.Group();
+const rollingWheels = [];
+let skaterRig = null;
+const movingArms = [];
 scene.add(skateboard);
 
 // MATERIALS
@@ -215,6 +218,7 @@ function addSilhouetteSegment(parent, start, end, radius, material = silhouetteM
 function addSilhouetteSkater() {
     const skater = new THREE.Group();
     const depth = 0.29;
+    skaterRig = skater;
 
     const head = new THREE.Mesh(
         new THREE.SphereGeometry(0.34, 24, 18),
@@ -266,10 +270,11 @@ function addSilhouetteSkater() {
     addSilhouetteSegment(skater, backKnee, [-1.18, 0.22, depth], 0.15);
     addSilhouetteSegment(skater, frontKnee, [1.18, 0.2, depth], 0.15);
 
-    addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
-    addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
-    addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.02, 1.94, depth], 0.12);
-    addSilhouetteSegment(skater, [1.02, 1.94, depth], [1.45, 1.48, depth], 0.1);
+    const leftUpperArm = addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
+    const leftForearm = addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
+    const rightUpperArm = addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.02, 1.94, depth], 0.12);
+    const rightForearm = addSilhouetteSegment(skater, [1.02, 1.94, depth], [1.45, 1.48, depth], 0.1);
+    movingArms.push(leftUpperArm, leftForearm, rightUpperArm, rightForearm);
 
     addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.11, silhouetteAccentMaterial);
     addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.11, silhouetteAccentMaterial);
@@ -383,6 +388,7 @@ function createTruck(x) {
         );
 
         truck.add(wheel);
+        rollingWheels.push(wheel);
 
         const bearing = new THREE.Mesh(
             bearingGeometry,
@@ -398,6 +404,7 @@ function createTruck(x) {
 
 createTruck(-2.65);
 createTruck(2.65);
+skateboard.scale.setScalar(1.2);
 
 // INITIAL POSITION
 
@@ -419,11 +426,33 @@ const clock = new THREE.Clock();
 
 let trickStarted = false;
 let trickStartTime = 0;
+let previousRideX = -7.2;
 
 function animate() {
     requestAnimationFrame(animate);
 
     const time = clock.getElapsedTime();
+    const rideDuration = 4.2;
+    const rideProgress = Math.min(time / rideDuration, 1);
+    const rideEase = 1 - Math.pow(1 - rideProgress, 3);
+    const cruiseMotion = rideProgress === 1
+        ? Math.sin((time - rideDuration) * 0.45) * 0.22
+        : 0;
+    const rideX = -7.2 + (7.2 * rideEase) + cruiseMotion;
+    const rideDelta = rideX - previousRideX;
+
+    skateboard.position.x = rideX;
+    previousRideX = rideX;
+
+    for (const wheel of rollingWheels) {
+        wheel.rotation.z -= rideDelta / 0.35;
+    }
+
+    skaterRig.rotation.z = Math.sin(time * 1.7) * 0.025;
+    movingArms[0].rotation.z = Math.sin(time * 1.7) * 0.025;
+    movingArms[1].rotation.z = Math.sin(time * 1.7) * 0.035;
+    movingArms[2].rotation.z = -Math.sin(time * 1.7) * 0.025;
+    movingArms[3].rotation.z = -Math.sin(time * 1.7) * 0.035;
 
     if (!trickStarted) {
         skateboard.position.y =
