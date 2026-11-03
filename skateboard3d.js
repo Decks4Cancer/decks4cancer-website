@@ -56,6 +56,12 @@ let frontFoot = null;
 let rearFoot = null;
 let frontFootRestPosition = null;
 let rearFootRestPosition = null;
+let frontHipGroup = null;
+let frontKneeGroup = null;
+let frontAnkleGroup = null;
+let rearHipGroup = null;
+let rearKneeGroup = null;
+let rearAnkleGroup = null;
 boardPivot.position.x = -2.65 * 1.2;
 boardFlipPivot.position.x = 2.65 * 1.2;
 skateboard.position.x = 0;
@@ -227,6 +233,55 @@ function addSilhouetteSegment(parent, start, end, radius, material = silhouetteM
     return segment;
 }
 
+function addSegmentFromOrigin(parent, target, radius, material = silhouetteMaterial) {
+    const start = new THREE.Vector3(0, 0, 0);
+    const end = new THREE.Vector3(...target);
+    const direction = end.clone().sub(start);
+    const segment = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius, radius * 1.08, direction.length(), 12),
+        material
+    );
+    segment.position.copy(end).multiplyScalar(0.5);
+    segment.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize()
+    );
+    parent.add(segment);
+    return segment;
+}
+
+function addJointAtOrigin(parent, radius, material = silhouetteMaterial) {
+    const joint = new THREE.Mesh(
+        new THREE.SphereGeometry(radius, 16, 12),
+        material
+    );
+    parent.add(joint);
+    return joint;
+}
+
+function buildLeg(hipPos, kneeOffset, ankleOffset, footOffset, thighRadius, shinRadius, footRadius) {
+    const hipGroup = new THREE.Group();
+    hipGroup.position.set(...hipPos);
+
+    addSegmentFromOrigin(hipGroup, kneeOffset, thighRadius);
+
+    const kneeGroup = new THREE.Group();
+    kneeGroup.position.set(...kneeOffset);
+    hipGroup.add(kneeGroup);
+    addJointAtOrigin(kneeGroup, 0.21, silhouetteAccentMaterial);
+
+    addSegmentFromOrigin(kneeGroup, ankleOffset, shinRadius);
+
+    const ankleGroup = new THREE.Group();
+    ankleGroup.position.set(...ankleOffset);
+    kneeGroup.add(ankleGroup);
+    addJointAtOrigin(ankleGroup, 0.14);
+
+    const foot = addSegmentFromOrigin(ankleGroup, footOffset, footRadius, silhouetteAccentMaterial);
+
+    return { hipGroup, kneeGroup, ankleGroup, foot };
+}
+
 function addSilhouetteSkater() {
     const skater = new THREE.Group();
     const depth = 0.05;
@@ -288,18 +343,32 @@ function addSilhouetteSkater() {
         skater.add(joint);
     }
 
-    const backKnee = [-0.42, 0.78, depth];
-    const frontKnee = [0.42, 0.7, depth];
-    const rearAnkle = [rearFootX, 0.22, depth];
-    const frontAnkle = [frontFootX, 0.2, depth];
-    addSilhouetteSegment(skater, [-0.24, 1.25, depth], backKnee, 0.19);
-    addSilhouetteSegment(skater, [0.24, 1.25, depth], frontKnee, 0.19);
-    addSilhouetteSegment(skater, backKnee, rearAnkle, 0.15);
-    addSilhouetteSegment(skater, frontKnee, frontAnkle, 0.15);
-    addJoint([...backKnee], 0.21, silhouetteAccentMaterial);
-    addJoint([...frontKnee], 0.21, silhouetteAccentMaterial);
-    addJoint([...rearAnkle], 0.14);
-    addJoint([...frontAnkle], 0.14);
+    // Build legs as hierarchical joint chains: hip → knee → ankle → foot
+    // Rear leg
+    const rearHipPos = [-0.24, 1.25, depth];
+    const rearKneeOffset = [-0.18, -0.47, 0];
+    const rearAnkleOffset = [rearFootX + 0.24, -0.56, 0];
+    const rearFootOffset = [0.32, -0.06, 0.01];
+    const rearLeg = buildLeg(rearHipPos, rearKneeOffset, rearAnkleOffset, rearFootOffset, 0.19, 0.15, 0.065);
+    skater.add(rearLeg.hipGroup);
+    rearHipGroup = rearLeg.hipGroup;
+    rearKneeGroup = rearLeg.kneeGroup;
+    rearAnkleGroup = rearLeg.ankleGroup;
+    rearFoot = rearLeg.foot;
+    rearFootRestPosition = rearFoot.position.clone();
+
+    // Front leg
+    const frontHipPos = [0.24, 1.25, depth];
+    const frontKneeOffset = [0.18, -0.55, 0];
+    const frontAnkleOffset = [frontFootX - 0.24, -0.5, 0];
+    const frontFootOffset = [0.32, -0.06, 0.01];
+    const frontLeg = buildLeg(frontHipPos, frontKneeOffset, frontAnkleOffset, frontFootOffset, 0.19, 0.15, 0.065);
+    skater.add(frontLeg.hipGroup);
+    frontHipGroup = frontLeg.hipGroup;
+    frontKneeGroup = frontLeg.kneeGroup;
+    frontAnkleGroup = frontLeg.ankleGroup;
+    frontFoot = frontLeg.foot;
+    frontFootRestPosition = frontFoot.position.clone();
 
     addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
     addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
@@ -309,23 +378,6 @@ function addSilhouetteSkater() {
     addJoint([1.02, 1.94, depth], 0.14, silhouetteAccentMaterial);
     addJoint([-1.36, 1.36, depth], 0.11);
     addJoint([1.45, 1.48, depth], 0.11);
-
-    rearFoot = addSilhouetteSegment(
-        skater,
-        [rearFootX - 0.16, 0.22, depth],
-        [rearFootX + 0.16, 0.16, depth + 0.01],
-        0.065,
-        silhouetteAccentMaterial
-    );
-    rearFootRestPosition = rearFoot.position.clone();
-    frontFoot = addSilhouetteSegment(
-        skater,
-        [frontFootX - 0.16, 0.2, depth],
-        [frontFootX + 0.16, 0.14, depth + 0.01],
-        0.065,
-        silhouetteAccentMaterial
-    );
-    frontFootRestPosition = frontFoot.position.clone();
 
     skater.scale.setScalar(riderScale);
     skater.position.y = -0.47;
@@ -516,8 +568,12 @@ function animate() {
         boardFlipPivot.rotation.z = 0;
         skaterRig.position.y = riderBaseY;
         skaterRig.scale.y = skaterRig.scale.x;
-        frontFoot.position.copy(frontFootRestPosition);
-        rearFoot.position.copy(rearFootRestPosition);
+        frontHipGroup.rotation.z = 0;
+        frontKneeGroup.rotation.z = 0;
+        frontAnkleGroup.rotation.z = 0;
+        rearHipGroup.rotation.z = 0;
+        rearKneeGroup.rotation.z = 0;
+        rearAnkleGroup.rotation.z = 0;
     } else {
         const elapsed = time - trickStartTime;
         const duration = 3.8;
@@ -529,43 +585,30 @@ function animate() {
         // Phase ordering: crouch → pop → lift → flick → rotation → catch → descend → land
         const crouch = phase(0.03, 0.14) * (1 - phase(0.14, 0.22));
         const pop = phase(0.14, 0.22);
-        const lift = phase(0.20, 0.32);
+        const lift = phase(0.20, 0.34);
         const flickSlide = phase(0.22, 0.32);
-        const flickKick = phase(0.30, 0.36);
-        const rotationProgress = phase(0.34, 0.72);
-        const catchEase = phase(0.72, 0.80);
+        const flickKick = phase(0.30, 0.38);
+        const rotationProgress = phase(0.32, 0.70);
+        const catchEase = phase(0.70, 0.80);
         const descent = phase(0.78, 0.94);
         const landingCompression = 1 - phase(0.90, 1.0);
+        const airborneKneeTuck = phase(0.30, 0.40) * (1 - phase(0.68, 0.78));
 
-        // Board pop pitch: nose rises, tail strikes ground
-        // Pivot at rear truck. Tail extends behind pivot by tailLever.
-        // Positive z rotation lifts nose, drops tail toward ground.
-        const tailLever = boardHalfLength - truckOffset;
-        const popAngle = pop * (1 - phase(0.22, 0.32)) * 0.6;
+        // Board pop pitch: nose rises, tail strikes ground.
+        // Pop angle overlaps with flip rotation: pop decays as flip ramps up.
+        // No flat reset — the nose-up angle transitions directly into the flip.
+        const popAngle = pop * 0.6 * (1 - phase(0.22, 0.42));
 
         // Board vertical: stays at ground during pop, then lifts with rider
         const boardAirborne = lift * (1 - descent) * 2.2;
 
-        // Board flip rotation: starts AFTER flick, completes before catch
+        // Board flip rotation: starts during flick, overlaps pop decay, completes before catch
         const flipRotation = rotationProgress * Math.PI * 2;
 
         // Rider vertical: crouch lowers, then jumps above board
         const riderJump = lift * (1 - descent) * 2.8;
         const crouchDrop = crouch * 0.5;
         const landingDrop = landingCompression * 0.25;
-
-        // Front foot: slides diagonally up the grip tape toward nose, then flicks off
-        const footSlideX = flickSlide * 0.3;
-        const footSlideY = flickSlide * 0.12;
-        const footFlickX = flickKick * 0.15;
-        const footFlickY = -flickKick * 0.06;
-        const footReturn = catchEase;
-        const frontFootOffsetX = (footSlideX + footFlickX) * (1 - footReturn);
-        const frontFootOffsetY = (footSlideY + footFlickY) * (1 - footReturn);
-
-        // Rear foot: stays on tail during pop, then lifts with rider
-        const rearFootLift = (lift - pop * 0.3) * (1 - catchEase) * 0.3;
-        const rearFootOffsetY = Math.max(0, rearFootLift);
 
         // Apply board transforms
         rideGroup.position.y = 0;
@@ -585,15 +628,22 @@ function animate() {
         skaterRig.rotation.z =
             Math.sin(time * 4.2) * 0.035 + crouch * 0.015;
 
-        // Apply foot positions (in skater local space, pre-scale)
-        const invScale = 1 / skaterRig.scale.x;
-        frontFoot.position.x =
-            frontFootRestPosition.x + frontFootOffsetX;
-        frontFoot.position.y =
-            frontFootRestPosition.y + frontFootOffsetY * invScale;
-        rearFoot.position.x = rearFootRestPosition.x;
-        rearFoot.position.y =
-            rearFootRestPosition.y + rearFootOffsetY * invScale;
+        // Front leg: animate as connected articulated chain via joint rotations.
+        // Hip flexes forward for slide, knee bends for tuck, ankle extends for flick.
+        // All rotations keep the foot connected to the ankle.
+        const frontHipRotZ = -flickSlide * 0.5 * (1 - catchEase) - airborneKneeTuck * 0.4;
+        const frontKneeRotZ = (flickSlide * 0.6 + airborneKneeTuck * 1.2) * (1 - catchEase);
+        const frontAnkleRotZ = -flickKick * 0.8 * (1 - catchEase);
+        frontHipGroup.rotation.z = frontHipRotZ;
+        frontKneeGroup.rotation.z = frontKneeRotZ;
+        frontAnkleGroup.rotation.z = frontAnkleRotZ;
+
+        // Rear leg: bends at knee during crouch and airborne tuck, stays grounded during pop
+        const rearKneeRotZ = (crouch * 0.5 + airborneKneeTuck * 0.9 + landingCompression * 0.6) * (1 - pop * 0.3);
+        const rearHipRotZ = crouch * 0.2 + airborneKneeTuck * 0.3;
+        rearHipGroup.rotation.z = rearHipRotZ;
+        rearKneeGroup.rotation.z = rearKneeRotZ;
+        rearAnkleGroup.rotation.z = 0;
 
         if (progress >= 1) {
             trickStarted = false;
@@ -603,8 +653,12 @@ function animate() {
             boardFlipPivot.rotation.x = 0;
             skaterRig.position.y = riderBaseY;
             skaterRig.scale.y = skaterRig.scale.x;
-            frontFoot.position.copy(frontFootRestPosition);
-            rearFoot.position.copy(rearFootRestPosition);
+            frontHipGroup.rotation.z = 0;
+            frontKneeGroup.rotation.z = 0;
+            frontAnkleGroup.rotation.z = 0;
+            rearHipGroup.rotation.z = 0;
+            rearKneeGroup.rotation.z = 0;
+            rearAnkleGroup.rotation.z = 0;
         }
     }
 
