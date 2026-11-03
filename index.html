@@ -60,7 +60,7 @@
     }
 
     .nav-logo .blue {
-      color: var(--blue);
+      color: var(--cyan);
     }
 
     .nav-logo .pink {
@@ -530,6 +530,50 @@
 .artist-questions textarea:focus {
     border-color: var(--pink);
 }
+
+.artist-form {
+    margin-top: 45px;
+}
+
+.artist-questions {
+    margin-top: 0;
+}
+
+.artist-submit {
+    display: inline-block;
+    padding: 15px 28px;
+    border: 2px solid var(--cyan);
+    border-radius: 999px;
+    background: var(--cyan);
+    color: var(--black);
+    font: inherit;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.artist-submit:hover,
+.artist-submit:focus-visible {
+    background: var(--white);
+    transform: translateY(-3px);
+}
+
+.artist-submit:focus-visible,
+.button:focus-visible,
+.support-button:focus-visible,
+.nav-links a:focus-visible,
+.nav-logo:focus-visible {
+    outline: 3px solid var(--yellow);
+    outline-offset: 4px;
+}
+
+.form-message {
+    margin-top: 22px;
+    color: var(--yellow);
+    font-weight: bold;
+}
     /* FOOTER */
 
     footer {
@@ -556,6 +600,9 @@
       }
     }
   </style>
+  <meta property="og:image" content="https://bolt.new/static/og_default.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 
 <body>
@@ -817,37 +864,46 @@ with the Decks 4 Cancer logo and your name engraved on the grip tape side, ready
             Before we get started, we'd love to learn a little about you, your art, and what inspires you.
         </p>
 
-        <div class="artist-questions">
+        <form class="artist-form" id="artist-form">
+          <div class="artist-questions">
+            <label for="artist-style">
+              1. If your art style had a voice or personality, how would you describe it?
+            </label>
+            <textarea id="artist-style" name="artist-style" rows="4" placeholder="Tell us about your style..." required></textarea>
 
-     <label for="artist-style">
-    1. If your art style had a voice or personality, how would you describe it?
-</label>
+            <label for="artist-why">
+              2. What first got you into creating art, and what keeps you inspired?
+            </label>
+            <textarea id="artist-why" name="artist-why" rows="4" placeholder="Tell us why you'd like to be involved..." required></textarea>
 
-<textarea id="artist-style" name="artist-style" rows="4" placeholder="Tell us about your style..."></textarea>
+            <label for="artist-idea">
+              3. Do you already have an idea or vibe in mind for your deck? Or are you just gonna let it flow?
+            </label>
+            <textarea id="artist-idea" name="artist-idea" rows="4" placeholder="Tell us what you're thinking..." required></textarea>
+          </div>
 
-<label for="artist-why">
-    2. What first got you into creating art, and what keeps you inspired?
-</label>
-
-<textarea id="artist-why" name="artist-why" rows="4" placeholder="Tell us why you'd like to be involved..."></textarea>
-
-<label for="artist-idea">
-    3. Do you already have an idea or vibe in mind for your deck? Or are you just gonna let it flow?
-</label>
-
-<textarea id="artist-idea" name="artist-idea" rows="4" placeholder="Tell us what you're thinking..."></textarea>
-        </div>
+          <button class="artist-submit" type="submit">Send My Answers</button>
+          <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+        </form>
 
     </div>
 </section>
 </main>
 
 <footer>
-  <footer>
   Decks 4 Cancer • Australia
-</footer>
 </footer>
 <script type="module" src="./skateboard3d.js"></script>
 <script type="module" src="./src/js/intro.js"></script>
+<script>
+  const artistForm = document.querySelector("#artist-form");
+  const formMessage = document.querySelector("#form-message");
+
+  artistForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    formMessage.textContent = "Thanks for sharing your ideas. We’ll be in touch about the next steps.";
+    artistForm.reset();
+  });
+</script>
 </body>
 </html>
