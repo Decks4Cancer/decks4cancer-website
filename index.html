@@ -554,10 +554,15 @@
     transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.artist-submit:hover,
-.artist-submit:focus-visible {
+.artist-submit:not(:disabled):hover,
+.artist-submit:not(:disabled):focus-visible {
     background: var(--white);
     transform: translateY(-3px);
+}
+
+.artist-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .artist-submit:focus-visible,
@@ -569,8 +574,7 @@
     outline-offset: 4px;
 }
 
-.form-message {
-    margin-top: 22px;
+.form-status {
     color: var(--yellow);
     font-weight: bold;
 }
@@ -845,7 +849,7 @@
 <section class="create-deck" id="create-deck">
     <div class="section-inner">
 
-        <div class="section-label">FOR ARTISTS</div>
+        <div class="section-label">FOR ARTISTS — WORK IN PROGRESS</div>
 
         <h2>CREATE A DECK.</h2>
 
@@ -862,6 +866,10 @@ with the Decks 4 Cancer logo and your name engraved on the grip tape side, ready
 
         <p>
             Before we get started, we'd love to learn a little about you, your art, and what inspires you.
+        </p>
+
+        <p class="form-status">
+            This application form is being prepared. Nothing is sent or saved yet.
         </p>
 
         <form class="artist-form" id="artist-form">
@@ -882,8 +890,7 @@ with the Decks 4 Cancer logo and your name engraved on the grip tape side, ready
             <textarea id="artist-idea" name="artist-idea" rows="4" placeholder="Tell us what you're thinking..." required></textarea>
           </div>
 
-          <button class="artist-submit" type="submit">Send My Answers</button>
-          <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+          <button class="artist-submit" type="submit" disabled>Submission Coming Soon</button>
         </form>
 
     </div>
@@ -895,15 +902,5 @@ with the Decks 4 Cancer logo and your name engraved on the grip tape side, ready
 </footer>
 <script type="module" src="./skateboard3d.js"></script>
 <script type="module" src="./src/js/intro.js"></script>
-<script>
-  const artistForm = document.querySelector("#artist-form");
-  const formMessage = document.querySelector("#form-message");
-
-  artistForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    formMessage.textContent = "Thanks for sharing your ideas. We’ll be in touch about the next steps.";
-    artistForm.reset();
-  });
-</script>
 </body>
 </html>

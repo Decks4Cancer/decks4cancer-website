@@ -180,6 +180,107 @@ const grip = new THREE.Mesh(
 grip.position.z = 0.215;
 skateboard.add(grip);
 
+// STATIC SKATEBOARDER SILHOUETTE
+
+const silhouetteMaterial = new THREE.MeshStandardMaterial({
+    color: 0x010203,
+    roughness: 0.94,
+    metalness: 0.05
+});
+
+const silhouetteAccentMaterial = new THREE.MeshStandardMaterial({
+    color: 0x090b0d,
+    roughness: 0.82,
+    metalness: 0.12
+});
+
+function addSilhouetteSegment(parent, start, end, radius, material = silhouetteMaterial) {
+    const startPoint = new THREE.Vector3(...start);
+    const endPoint = new THREE.Vector3(...end);
+    const direction = endPoint.clone().sub(startPoint);
+    const segment = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius, radius * 1.08, direction.length(), 12),
+        material
+    );
+
+    segment.position.copy(startPoint).add(endPoint).multiplyScalar(0.5);
+    segment.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize()
+    );
+    parent.add(segment);
+    return segment;
+}
+
+function addSilhouetteSkater() {
+    const skater = new THREE.Group();
+    const depth = -0.34;
+
+    const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.34, 24, 18),
+        silhouetteMaterial
+    );
+    head.scale.set(0.92, 1.08, 0.94);
+    head.position.set(0.03, 3.05, depth);
+    skater.add(head);
+
+    const neck = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.18, 0.32, 14),
+        silhouetteMaterial
+    );
+    neck.position.set(0.03, 2.67, depth);
+    skater.add(neck);
+
+    const shoulder = new THREE.Mesh(
+        new THREE.SphereGeometry(0.47, 20, 14),
+        silhouetteMaterial
+    );
+    shoulder.scale.set(1.45, 0.7, 0.72);
+    shoulder.position.set(0, 2.34, depth);
+    skater.add(shoulder);
+
+    addSilhouetteSegment(skater, [-0.22, 2.48, depth], [-0.38, 1.45, depth], 0.31);
+    addSilhouetteSegment(skater, [0.22, 2.48, depth], [0.35, 1.45, depth], 0.31);
+
+    const hip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.43, 20, 14),
+        silhouetteAccentMaterial
+    );
+    hip.scale.set(1.12, 0.82, 0.82);
+    hip.position.set(0, 1.33, depth);
+    skater.add(hip);
+
+    const backKnee = [-0.72, 0.72, depth];
+    const frontKnee = [0.82, 0.66, depth];
+    addSilhouetteSegment(skater, [-0.27, 1.25, depth], backKnee, 0.2);
+    addSilhouetteSegment(skater, [0.27, 1.25, depth], frontKnee, 0.2);
+    addSilhouetteSegment(skater, backKnee, [-1.2, 0.18, depth], 0.17);
+    addSilhouetteSegment(skater, frontKnee, [1.15, 0.16, depth], 0.17);
+
+    addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.02, 1.78, depth], 0.13);
+    addSilhouetteSegment(skater, [-1.02, 1.78, depth], [-1.38, 1.12, depth], 0.11);
+    addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.08, 1.86, depth], 0.13);
+    addSilhouetteSegment(skater, [1.08, 1.86, depth], [1.48, 1.34, depth], 0.11);
+
+    addSilhouetteSegment(skater, [-1.2, 0.16, depth], [-1.48, 0.12, depth - 0.02], 0.12, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [1.15, 0.14, depth], [1.49, 0.1, depth - 0.02], 0.12, silhouetteAccentMaterial);
+
+    skater.position.z = 0.02;
+    skateboard.add(skater);
+}
+
+addSilhouetteSkater();
+
+// SUBTLE RIM LIGHTING FOR THE SILHOUETTE
+
+const cyanRimLight = new THREE.PointLight(0x00d7f2, 3.2, 8, 2);
+cyanRimLight.position.set(-4.5, 2.1, -2.4);
+scene.add(cyanRimLight);
+
+const pinkRimLight = new THREE.PointLight(0xff2da6, 2.6, 8, 2);
+pinkRimLight.position.set(4.2, 1.4, -1.8);
+scene.add(pinkRimLight);
+
 // GRIP TAPE MOUNTING BOLTS
 
 const boltGeometry = new THREE.CylinderGeometry(
