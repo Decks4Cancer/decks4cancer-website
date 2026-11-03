@@ -50,7 +50,6 @@ const rideGroup = new THREE.Group();
 const skateboard = new THREE.Group();
 const rollingWheels = [];
 let skaterRig = null;
-const movingArms = [];
 rideGroup.add(skateboard);
 scene.add(rideGroup);
 
@@ -219,7 +218,7 @@ function addSilhouetteSegment(parent, start, end, radius, material = silhouetteM
 
 function addSilhouetteSkater() {
     const skater = new THREE.Group();
-    const depth = 0.29;
+    const depth = 0.05;
     skaterRig = skater;
 
     const head = new THREE.Mesh(
@@ -265,24 +264,40 @@ function addSilhouetteSkater() {
     hip.position.set(0, 1.32, depth);
     skater.add(hip);
 
+    function addJoint(position, radius, material = silhouetteMaterial) {
+        const joint = new THREE.Mesh(
+            new THREE.SphereGeometry(radius, 16, 12),
+            material
+        );
+        joint.position.set(...position);
+        skater.add(joint);
+    }
+
     const backKnee = [-0.78, 0.78, depth];
     const frontKnee = [0.82, 0.7, depth];
     addSilhouetteSegment(skater, [-0.24, 1.25, depth], backKnee, 0.19);
     addSilhouetteSegment(skater, [0.24, 1.25, depth], frontKnee, 0.19);
     addSilhouetteSegment(skater, backKnee, [-1.18, 0.22, depth], 0.15);
     addSilhouetteSegment(skater, frontKnee, [1.18, 0.2, depth], 0.15);
+    addJoint([...backKnee], 0.21, silhouetteAccentMaterial);
+    addJoint([...frontKnee], 0.21, silhouetteAccentMaterial);
+    addJoint([-1.18, 0.22, depth], 0.14);
+    addJoint([1.18, 0.2, depth], 0.14);
 
-    const leftUpperArm = addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
-    const leftForearm = addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
-    const rightUpperArm = addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.02, 1.94, depth], 0.12);
-    const rightForearm = addSilhouetteSegment(skater, [1.02, 1.94, depth], [1.45, 1.48, depth], 0.1);
-    movingArms.push(leftUpperArm, leftForearm, rightUpperArm, rightForearm);
+    addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
+    addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
+    addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.02, 1.94, depth], 0.12);
+    addSilhouetteSegment(skater, [1.02, 1.94, depth], [1.45, 1.48, depth], 0.1);
+    addJoint([-1.0, 1.9, depth], 0.14, silhouetteAccentMaterial);
+    addJoint([1.02, 1.94, depth], 0.14, silhouetteAccentMaterial);
+    addJoint([-1.36, 1.36, depth], 0.11);
+    addJoint([1.45, 1.48, depth], 0.11);
 
-    addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.11, silhouetteAccentMaterial);
-    addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.11, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.065, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.065, silhouetteAccentMaterial);
 
-    skater.scale.setScalar(1.8);
-    skater.position.y = -0.02;
+    skater.scale.setScalar(6.5);
+    skater.position.y = -0.75;
     rideGroup.add(skater);
 }
 
@@ -453,10 +468,6 @@ function animate() {
     }
 
     skaterRig.rotation.z = Math.sin(time * 1.7) * 0.025;
-    movingArms[0].rotation.z = Math.sin(time * 1.7) * 0.025;
-    movingArms[1].rotation.z = Math.sin(time * 1.7) * 0.035;
-    movingArms[2].rotation.z = -Math.sin(time * 1.7) * 0.025;
-    movingArms[3].rotation.z = -Math.sin(time * 1.7) * 0.035;
 
     if (!trickStarted) {
         rideGroup.position.y =
