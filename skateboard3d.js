@@ -15,8 +15,8 @@ const camera = new THREE.PerspectiveCamera(
     40, 1000 / 440, 0.1, 100
 );
 
-camera.position.set(6, 4.8, 12);
-camera.lookAt(0, 2.1, 0);
+camera.position.set(8, 10, 29);
+camera.lookAt(0, 9, 0);
 
 const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -219,6 +219,10 @@ function addSilhouetteSegment(parent, start, end, radius, material = silhouetteM
 function addSilhouetteSkater() {
     const skater = new THREE.Group();
     const depth = 0.05;
+    const riderScale = 6.5 * 0.9;
+    const truckMountX = 2.65 * 1.2;
+    const rearFootX = -truckMountX / riderScale;
+    const frontFootX = truckMountX / riderScale;
     skaterRig = skater;
 
     const head = new THREE.Mesh(
@@ -273,16 +277,18 @@ function addSilhouetteSkater() {
         skater.add(joint);
     }
 
-    const backKnee = [-0.78, 0.78, depth];
-    const frontKnee = [0.82, 0.7, depth];
+    const backKnee = [-0.42, 0.78, depth];
+    const frontKnee = [0.42, 0.7, depth];
+    const rearAnkle = [rearFootX, 0.22, depth];
+    const frontAnkle = [frontFootX, 0.2, depth];
     addSilhouetteSegment(skater, [-0.24, 1.25, depth], backKnee, 0.19);
     addSilhouetteSegment(skater, [0.24, 1.25, depth], frontKnee, 0.19);
-    addSilhouetteSegment(skater, backKnee, [-1.18, 0.22, depth], 0.15);
-    addSilhouetteSegment(skater, frontKnee, [1.18, 0.2, depth], 0.15);
+    addSilhouetteSegment(skater, backKnee, rearAnkle, 0.15);
+    addSilhouetteSegment(skater, frontKnee, frontAnkle, 0.15);
     addJoint([...backKnee], 0.21, silhouetteAccentMaterial);
     addJoint([...frontKnee], 0.21, silhouetteAccentMaterial);
-    addJoint([-1.18, 0.22, depth], 0.14);
-    addJoint([1.18, 0.2, depth], 0.14);
+    addJoint([...rearAnkle], 0.14);
+    addJoint([...frontAnkle], 0.14);
 
     addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
     addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
@@ -293,11 +299,11 @@ function addSilhouetteSkater() {
     addJoint([-1.36, 1.36, depth], 0.11);
     addJoint([1.45, 1.48, depth], 0.11);
 
-    addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.065, silhouetteAccentMaterial);
-    addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.065, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [rearFootX - 0.16, 0.22, depth], [rearFootX + 0.16, 0.16, depth + 0.01], 0.065, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [frontFootX - 0.16, 0.2, depth], [frontFootX + 0.16, 0.14, depth + 0.01], 0.065, silhouetteAccentMaterial);
 
-    skater.scale.setScalar(6.5);
-    skater.position.y = -0.75;
+    skater.scale.setScalar(riderScale);
+    skater.position.y = -0.47;
     rideGroup.add(skater);
 }
 
