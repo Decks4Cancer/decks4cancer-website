@@ -12,11 +12,11 @@ if (!stage) {
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-    40, 800 / 350, 0.1, 100
+    40, 1000 / 440, 0.1, 100
 );
 
-camera.position.set(2.3, -4.2, 9.2);
-camera.lookAt(0, 0, 0.75);
+camera.position.set(6, 4.8, 12);
+camera.lookAt(0, 2.1, 0);
 
 const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -37,20 +37,22 @@ stage.appendChild(renderer.domElement);
 scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
 const keyLight = new THREE.DirectionalLight(0xffffff, 3.5);
-keyLight.position.set(4, 6, -8);
+keyLight.position.set(4, 8, 8);
 scene.add(keyLight);
 
 const fillLight = new THREE.DirectionalLight(0xffffff, 2);
-fillLight.position.set(-5, -4, 7);
+fillLight.position.set(-5, 3, 6);
 scene.add(fillLight);
 
 // SKATEBOARD
 
+const rideGroup = new THREE.Group();
 const skateboard = new THREE.Group();
 const rollingWheels = [];
 let skaterRig = null;
 const movingArms = [];
-scene.add(skateboard);
+rideGroup.add(skateboard);
+scene.add(rideGroup);
 
 // MATERIALS
 
@@ -279,8 +281,9 @@ function addSilhouetteSkater() {
     addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.11, silhouetteAccentMaterial);
     addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.11, silhouetteAccentMaterial);
 
-    skater.position.z = 0.02;
-    skateboard.add(skater);
+    skater.scale.setScalar(1.8);
+    skater.position.y = -0.02;
+    rideGroup.add(skater);
 }
 
 addSilhouetteSkater();
@@ -288,11 +291,11 @@ addSilhouetteSkater();
 // SUBTLE RIM LIGHTING FOR THE SILHOUETTE
 
 const cyanRimLight = new THREE.PointLight(0x00d7f2, 3.2, 8, 2);
-cyanRimLight.position.set(-4.5, 2.1, 4.6);
+cyanRimLight.position.set(-4.5, 4.2, 5.4);
 scene.add(cyanRimLight);
 
 const pinkRimLight = new THREE.PointLight(0xff2da6, 2.6, 8, 2);
-pinkRimLight.position.set(4.2, 1.4, 3.8);
+pinkRimLight.position.set(4.2, 3.2, 4.2);
 scene.add(pinkRimLight);
 
 // GRIP TAPE MOUNTING BOLTS
@@ -405,13 +408,14 @@ function createTruck(x) {
 createTruck(-2.65);
 createTruck(2.65);
 skateboard.scale.setScalar(1.2);
+skateboard.rotation.x = -Math.PI / 2;
 
 // INITIAL POSITION
 
 const restingRotation = {
-    x: 0.15,
-    y: -0.18,
-    z: -0.12
+    x: -Math.PI / 2,
+    y: 0,
+    z: 0
 };
 
 skateboard.rotation.set(
@@ -441,11 +445,11 @@ function animate() {
     const rideX = -7.2 + (7.2 * rideEase) + cruiseMotion;
     const rideDelta = rideX - previousRideX;
 
-    skateboard.position.x = rideX;
+    rideGroup.position.x = rideX;
     previousRideX = rideX;
 
     for (const wheel of rollingWheels) {
-        wheel.rotation.z -= rideDelta / 0.35;
+        wheel.rotation.y -= rideDelta / (0.35 * 1.2);
     }
 
     skaterRig.rotation.z = Math.sin(time * 1.7) * 0.025;
@@ -455,17 +459,11 @@ function animate() {
     movingArms[3].rotation.z = -Math.sin(time * 1.7) * 0.035;
 
     if (!trickStarted) {
-        skateboard.position.y =
+        rideGroup.position.y =
             Math.sin(time * 1.5) * 0.08;
 
-        skateboard.rotation.x =
-            restingRotation.x +
-            Math.sin(time * 0.8) * 0.05;
-
-        skateboard.rotation.y =
-            restingRotation.y +
-            Math.sin(time * 0.6) * 0.1;
-
+        skateboard.rotation.x = restingRotation.x;
+        skateboard.rotation.y = restingRotation.y;
         skateboard.rotation.z = restingRotation.z;
     } else {
         const elapsed = time - trickStartTime;
@@ -481,13 +479,13 @@ function animate() {
         skateboard.rotation.y = restingRotation.y;
         skateboard.rotation.z = restingRotation.z;
 
-        skateboard.position.y =
+        rideGroup.position.y =
             Math.sin(progress * Math.PI) * 1.0;
 
         if (progress >= 1) {
             trickStarted = false;
             skateboard.rotation.x = restingRotation.x;
-            skateboard.position.y = 0;
+            rideGroup.position.y = 0;
         }
     }
 
