@@ -15,8 +15,8 @@ const camera = new THREE.PerspectiveCamera(
     40, 800 / 350, 0.1, 100
 );
 
-camera.position.set(1.5, -3.2, -12);
-camera.lookAt(0, 0, 0);
+camera.position.set(2.8, -4.8, 11.5);
+camera.lookAt(0, 0, 0.65);
 
 const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -214,7 +214,7 @@ function addSilhouetteSegment(parent, start, end, radius, material = silhouetteM
 
 function addSilhouetteSkater() {
     const skater = new THREE.Group();
-    const depth = -0.34;
+    const depth = 0.29;
 
     const head = new THREE.Mesh(
         new THREE.SphereGeometry(0.34, 24, 18),
@@ -231,39 +231,48 @@ function addSilhouetteSkater() {
     neck.position.set(0.03, 2.67, depth);
     skater.add(neck);
 
-    const shoulder = new THREE.Mesh(
-        new THREE.SphereGeometry(0.47, 20, 14),
+    const torso = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.31, 0.43, 1.18, 18),
         silhouetteMaterial
     );
-    shoulder.scale.set(1.45, 0.7, 0.72);
-    shoulder.position.set(0, 2.34, depth);
+    torso.scale.z = 0.82;
+    torso.rotation.z = -0.08;
+    torso.position.set(0, 1.88, depth);
+    skater.add(torso);
+
+    const shoulder = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 20, 14),
+        silhouetteMaterial
+    );
+    shoulder.scale.set(1.5, 0.72, 0.75);
+    shoulder.position.set(-0.02, 2.36, depth);
     skater.add(shoulder);
 
-    addSilhouetteSegment(skater, [-0.22, 2.48, depth], [-0.38, 1.45, depth], 0.31);
-    addSilhouetteSegment(skater, [0.22, 2.48, depth], [0.35, 1.45, depth], 0.31);
+    addSilhouetteSegment(skater, [-0.24, 2.42, depth], [-0.42, 1.52, depth], 0.27);
+    addSilhouetteSegment(skater, [0.24, 2.42, depth], [0.38, 1.52, depth], 0.27);
 
     const hip = new THREE.Mesh(
-        new THREE.SphereGeometry(0.43, 20, 14),
+        new THREE.SphereGeometry(0.4, 20, 14),
         silhouetteAccentMaterial
     );
-    hip.scale.set(1.12, 0.82, 0.82);
-    hip.position.set(0, 1.33, depth);
+    hip.scale.set(1.2, 0.8, 0.82);
+    hip.position.set(0, 1.32, depth);
     skater.add(hip);
 
-    const backKnee = [-0.72, 0.72, depth];
-    const frontKnee = [0.82, 0.66, depth];
-    addSilhouetteSegment(skater, [-0.27, 1.25, depth], backKnee, 0.2);
-    addSilhouetteSegment(skater, [0.27, 1.25, depth], frontKnee, 0.2);
-    addSilhouetteSegment(skater, backKnee, [-1.2, 0.18, depth], 0.17);
-    addSilhouetteSegment(skater, frontKnee, [1.15, 0.16, depth], 0.17);
+    const backKnee = [-0.78, 0.78, depth];
+    const frontKnee = [0.82, 0.7, depth];
+    addSilhouetteSegment(skater, [-0.24, 1.25, depth], backKnee, 0.19);
+    addSilhouetteSegment(skater, [0.24, 1.25, depth], frontKnee, 0.19);
+    addSilhouetteSegment(skater, backKnee, [-1.18, 0.22, depth], 0.15);
+    addSilhouetteSegment(skater, frontKnee, [1.18, 0.2, depth], 0.15);
 
-    addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.02, 1.78, depth], 0.13);
-    addSilhouetteSegment(skater, [-1.02, 1.78, depth], [-1.38, 1.12, depth], 0.11);
-    addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.08, 1.86, depth], 0.13);
-    addSilhouetteSegment(skater, [1.08, 1.86, depth], [1.48, 1.34, depth], 0.11);
+    addSilhouetteSegment(skater, [-0.3, 2.38, depth], [-1.0, 1.9, depth], 0.12);
+    addSilhouetteSegment(skater, [-1.0, 1.9, depth], [-1.36, 1.36, depth], 0.1);
+    addSilhouetteSegment(skater, [0.3, 2.38, depth], [1.02, 1.94, depth], 0.12);
+    addSilhouetteSegment(skater, [1.02, 1.94, depth], [1.45, 1.48, depth], 0.1);
 
-    addSilhouetteSegment(skater, [-1.2, 0.16, depth], [-1.48, 0.12, depth - 0.02], 0.12, silhouetteAccentMaterial);
-    addSilhouetteSegment(skater, [1.15, 0.14, depth], [1.49, 0.1, depth - 0.02], 0.12, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [-1.18, 0.22, depth], [-1.52, 0.16, depth + 0.01], 0.11, silhouetteAccentMaterial);
+    addSilhouetteSegment(skater, [1.18, 0.2, depth], [1.54, 0.14, depth + 0.01], 0.11, silhouetteAccentMaterial);
 
     skater.position.z = 0.02;
     skateboard.add(skater);
@@ -274,11 +283,11 @@ addSilhouetteSkater();
 // SUBTLE RIM LIGHTING FOR THE SILHOUETTE
 
 const cyanRimLight = new THREE.PointLight(0x00d7f2, 3.2, 8, 2);
-cyanRimLight.position.set(-4.5, 2.1, -2.4);
+cyanRimLight.position.set(-4.5, 2.1, 4.6);
 scene.add(cyanRimLight);
 
 const pinkRimLight = new THREE.PointLight(0xff2da6, 2.6, 8, 2);
-pinkRimLight.position.set(4.2, 1.4, -1.8);
+pinkRimLight.position.set(4.2, 1.4, 3.8);
 scene.add(pinkRimLight);
 
 // GRIP TAPE MOUNTING BOLTS
