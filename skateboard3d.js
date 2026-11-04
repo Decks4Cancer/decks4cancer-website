@@ -5,15 +5,15 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 // DECKS 4 CANCER — PHOTOREALISTIC BLANK MAPLE DECK
 
 const DECK_HALF_LENGTH = 4.0;
-const DECK_HALF_WIDTH = 1.03;
+const DECK_HALF_WIDTH = 1.0;
+const DECK_FLAT_RATIO = 0.68;
 const DECK_THICKNESS = 0.05;
 const DECK_BEVEL_THICKNESS = 0.025;
 const DECK_BEVEL_SIZE = 0.03;
-const DECK_KICK = 0.22;
-const TRUCK_CENTER_X = 2.6;
-const TRUCK_HOLE_SPACING_X = 0.25;
-const TRUCK_HOLE_SPACING_Y = 0.19;
-const TRUCK_HOLE_RADIUS = 0.05;
+const DECK_KICK = 0.08;
+const TRUCK_CENTER_X = 2.2;
+const TRUCK_HOLE_SPACING = 0.22;
+const TRUCK_HOLE_RADIUS = 0.035;
 const DECK_WIDTH_DESKTOP = 0.675;
 const DECK_WIDTH_MOBILE = 0.9;
 const MOBILE_BREAKPOINT = 750;
@@ -37,7 +37,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.1;
 
 stage.appendChild(renderer.domElement);
 
@@ -45,13 +45,13 @@ stage.appendChild(renderer.domElement);
 
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.55;
+scene.environmentIntensity = 0.5;
 
-const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.6);
+const keyLight = new THREE.DirectionalLight(0xfff1dc, 1.7);
 keyLight.position.set(-3, 7, 9);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xffffff, 0.45);
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
 fillLight.position.set(6, -2, 8);
 scene.add(fillLight);
 
@@ -65,34 +65,55 @@ scene.add(boardRoll);
 
 // MAPLE TEXTURES
 
-function createRandom(seed) {
-    let state = seed;
-    return () => {
-        state |= 0;
-        state = (state + 0x6D2B79F5) | 0;
-        let t = Math.imul(state ^ (state >>> 15), 1 | state);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function createValueNoise(seed) {
+    const hash = (x, y) => {
+        let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed, 1442695041);
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+    };
+
+    const noise = (x, y) => {
+        const xi = Math.floor(x);
+        const yi = Math.floor(y);
+        const xf = x - xi;
+        const yf = y - yi;
+        const u = xf * xf * (3 - 2 * xf);
+        const v = yf * yf * (3 - 2 * yf);
+        const a = hash(xi, yi);
+        const b = hash(xi + 1, yi);
+        const c = hash(xi, yi + 1);
+        const d = hash(xi + 1, yi + 1);
+        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+
+    return (x, y, octaves) => {
+        let sum = 0;
+        let total = 0;
+        let amplitude = 0.5;
+        let frequency = 1;
+        for (let o = 0; o < octaves; o++) {
+            sum += amplitude * noise(x * frequency, y * frequency);
+            total += amplitude;
+            amplitude *= 0.5;
+            frequency *= 2;
+        }
+        return sum / total;
     };
 }
 
-function drawGrainStreak(ctx, startX, y, length, amplitude, frequency, phase) {
-    ctx.beginPath();
-    for (let x = 0; x <= length; x += 6) {
-        const wave = Math.sin(x * frequency + phase) * amplitude;
-        if (x === 0) {
-            ctx.moveTo(startX, y + wave);
-        } else {
-            ctx.lineTo(startX + x, y + wave);
-        }
-    }
-    ctx.stroke();
+function mixColor(from, to, t) {
+    return from.map((value, index) => value + (to[index] - value) * t);
 }
 
 function createMapleTextures() {
-    const width = 2048;
-    const height = 512;
-    const random = createRandom(7);
+    const width = 1024;
+    const height = 256;
+    const fbm = createValueNoise(11);
+    const knotX = width * 0.42;
+    const knotY = height * 0.77;
+    const dark = [185, 120, 63];
+    const mid = [224, 167, 102];
+    const light = [245, 208, 152];
 
     const colorCanvas = document.createElement("canvas");
     const bumpCanvas = document.createElement("canvas");
@@ -101,51 +122,46 @@ function createMapleTextures() {
 
     const colorCtx = colorCanvas.getContext("2d");
     const bumpCtx = bumpCanvas.getContext("2d");
+    const colorImage = colorCtx.createImageData(width, height);
+    const bumpImage = bumpCtx.createImageData(width, height);
 
-    colorCtx.fillStyle = "#ebd1a4";
-    colorCtx.fillRect(0, 0, width, height);
-    bumpCtx.fillStyle = "#808080";
-    bumpCtx.fillRect(0, 0, width, height);
+    for (let py = 0; py < height; py++) {
+        for (let px = 0; px < width; px++) {
+            const u = px / width;
+            const v = py / height;
+            const warp = fbm(u * 3, v * 2, 2) * 2.2;
+            const figure = fbm(u * 2.2 + warp * 0.6, v * 9 + warp * 1.5, 3);
+            const bands = 0.5 + 0.5 * Math.sin(v * 26 + warp * 5 + figure * 9);
+            const blotch = fbm(u * 6, v * 4, 2);
 
-    for (let i = 0; i < 16; i++) {
-        const y = random() * height;
-        colorCtx.strokeStyle = `rgba(214,176,118,${0.05 + random() * 0.05})`;
-        colorCtx.lineWidth = 6 + random() * 18;
-        drawGrainStreak(colorCtx, -50, y, width + 100, 3 + random() * 8, 0.002 + random() * 0.003, random() * Math.PI * 2);
+            let grain = 0.45 * figure + 0.25 * bands + 0.3 * blotch;
+            grain = Math.min(Math.max((grain - 0.3) / 0.5, 0), 1);
+
+            const knotDistance = Math.hypot((px - knotX) * 0.5, py - knotY);
+            if (knotDistance < 12) {
+                const ring = 0.5 + 0.5 * Math.sin(knotDistance * 2.2);
+                grain *= (0.15 + 0.85 * (knotDistance / 12)) * (0.75 + 0.25 * ring);
+            }
+
+            const color = grain < 0.5
+                ? mixColor(dark, mid, grain * 2)
+                : mixColor(mid, light, (grain - 0.5) * 2);
+            const pixel = (py * width + px) * 4;
+            colorImage.data[pixel] = color[0];
+            colorImage.data[pixel + 1] = color[1];
+            colorImage.data[pixel + 2] = color[2];
+            colorImage.data[pixel + 3] = 255;
+
+            const height8 = 128 + (grain - 0.5) * 90;
+            bumpImage.data[pixel] = height8;
+            bumpImage.data[pixel + 1] = height8;
+            bumpImage.data[pixel + 2] = height8;
+            bumpImage.data[pixel + 3] = 255;
+        }
     }
 
-    for (let i = 0; i < 900; i++) {
-        const dark = random() < 0.6;
-        const alpha = 0.04 + random() * 0.12;
-        const y = random() * height;
-        const startX = random() * width - 200;
-        const length = 300 + random() * 1100;
-        const amplitude = 0.4 + random() * 2.5;
-        const frequency = 0.004 + random() * 0.01;
-        const phase = random() * Math.PI * 2;
-        const lineWidth = 0.4 + random() * 1.5;
-
-        colorCtx.strokeStyle = dark
-            ? `rgba(180,128,74,${alpha})`
-            : `rgba(252,240,216,${alpha})`;
-        colorCtx.lineWidth = lineWidth;
-        drawGrainStreak(colorCtx, startX, y, length, amplitude, frequency, phase);
-
-        const bumpShade = dark ? 70 : 200;
-        bumpCtx.strokeStyle = `rgba(${bumpShade},${bumpShade},${bumpShade},${alpha * 2})`;
-        bumpCtx.lineWidth = lineWidth;
-        drawGrainStreak(bumpCtx, startX, y, length, amplitude, frequency, phase);
-    }
-
-    for (let i = 0; i < 6000; i++) {
-        const x = random() * width;
-        const y = random() * height;
-        const dark = random() < 0.5;
-        colorCtx.fillStyle = dark
-            ? `rgba(170,120,66,${0.02 + random() * 0.04})`
-            : `rgba(255,246,228,${0.02 + random() * 0.04})`;
-        colorCtx.fillRect(x, y, 1 + random() * 2, 1);
-    }
+    colorCtx.putImageData(colorImage, 0, 0);
+    bumpCtx.putImageData(bumpImage, 0, 0);
 
     const colorTexture = new THREE.CanvasTexture(colorCanvas);
     colorTexture.colorSpace = THREE.SRGBColorSpace;
@@ -167,48 +183,55 @@ const mapleTextures = createMapleTextures();
 const mapleFaceMaterial = new THREE.MeshPhysicalMaterial({
     map: mapleTextures.colorTexture,
     bumpMap: mapleTextures.bumpTexture,
-    bumpScale: 0.6,
-    roughness: 0.5,
-    clearcoat: 0.25,
-    clearcoatRoughness: 0.45
+    bumpScale: 0.35,
+    roughness: 0.45,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.35
 });
 
 const mapleEdgeMaterial = new THREE.MeshStandardMaterial({
-    color: 0xd9b888,
-    roughness: 0.62
+    color: 0xe3b27a,
+    roughness: 0.5
 });
 
 // DECK SHAPE
 
-function deckHalfWidthAt(t) {
-    return DECK_HALF_WIDTH * Math.pow(1 - Math.pow(Math.abs(t), 6), 0.5);
-}
-
 function createDeckOutline() {
-    const samples = 180;
+    const flatEnd = DECK_HALF_LENGTH * DECK_FLAT_RATIO;
+    const noseRadiusX = DECK_HALF_LENGTH - flatEnd;
+    const steps = 48;
     const outline = new THREE.Shape();
 
-    for (let i = 0; i <= samples; i++) {
-        const t = Math.sin(-Math.PI / 2 + (i / samples) * Math.PI);
-        const x = t * DECK_HALF_LENGTH;
-        const y = deckHalfWidthAt(t);
-        if (i === 0) {
-            outline.moveTo(x, y);
-        } else {
-            outline.lineTo(x, y);
-        }
+    const nosePoint = (theta, sideSign, widthSign) => [
+        sideSign * (flatEnd + noseRadiusX * Math.sin(theta)),
+        widthSign * DECK_HALF_WIDTH * Math.cos(theta)
+    ];
+    const arcAngle = (i) => (i / steps) * (Math.PI / 2);
+
+    outline.moveTo(-flatEnd, DECK_HALF_WIDTH);
+    outline.lineTo(flatEnd, DECK_HALF_WIDTH);
+
+    for (let i = 1; i <= steps; i++) {
+        outline.lineTo(...nosePoint(arcAngle(i), 1, 1));
+    }
+    for (let i = steps - 1; i >= 0; i--) {
+        outline.lineTo(...nosePoint(arcAngle(i), 1, -1));
     }
 
-    for (let i = samples - 1; i >= 1; i--) {
-        const t = Math.sin(-Math.PI / 2 + (i / samples) * Math.PI);
-        outline.lineTo(t * DECK_HALF_LENGTH, -deckHalfWidthAt(t));
+    outline.lineTo(-flatEnd, -DECK_HALF_WIDTH);
+
+    for (let i = 1; i <= steps; i++) {
+        outline.lineTo(...nosePoint(arcAngle(i), -1, -1));
+    }
+    for (let i = steps - 1; i >= 1; i--) {
+        outline.lineTo(...nosePoint(arcAngle(i), -1, 1));
     }
 
     outline.closePath();
 
     for (const truckX of [-TRUCK_CENTER_X, TRUCK_CENTER_X]) {
-        for (const dx of [-TRUCK_HOLE_SPACING_X, TRUCK_HOLE_SPACING_X]) {
-            for (const dy of [-TRUCK_HOLE_SPACING_Y, TRUCK_HOLE_SPACING_Y]) {
+        for (const dx of [-TRUCK_HOLE_SPACING, TRUCK_HOLE_SPACING]) {
+            for (const dy of [-TRUCK_HOLE_SPACING, TRUCK_HOLE_SPACING]) {
                 const hole = new THREE.Path();
                 hole.absarc(truckX + dx, dy, TRUCK_HOLE_RADIUS, 0, Math.PI * 2, false);
                 outline.holes.push(hole);
