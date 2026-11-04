@@ -1,10 +1,20 @@
 
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
-// DECKS 4 CANCER — BLANK MAPLE DECK STAGE
+// DECKS 4 CANCER — PHOTOREALISTIC BLANK MAPLE DECK
 
-const DECK_LENGTH = 2 * 4.45 * 1.2;
-const DECK_WIDTH_DESKTOP = 0.65;
+const DECK_HALF_LENGTH = 4.0;
+const DECK_HALF_WIDTH = 1.03;
+const DECK_THICKNESS = 0.05;
+const DECK_BEVEL_THICKNESS = 0.025;
+const DECK_BEVEL_SIZE = 0.03;
+const DECK_KICK = 0.22;
+const TRUCK_CENTER_X = 2.6;
+const TRUCK_HOLE_SPACING_X = 0.25;
+const TRUCK_HOLE_SPACING_Y = 0.19;
+const TRUCK_HOLE_RADIUS = 0.05;
+const DECK_WIDTH_DESKTOP = 0.675;
 const DECK_WIDTH_MOBILE = 0.9;
 const MOBILE_BREAKPOINT = 750;
 const CAMERA_FOV = 40;
@@ -27,305 +37,210 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.05;
 
 stage.appendChild(renderer.domElement);
 
 // LIGHTING
 
-scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 3);
-keyLight.position.set(4, 8, 10);
+const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.6);
+keyLight.position.set(-3, 7, 9);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xffffff, 1.6);
-fillLight.position.set(-6, 3, 8);
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.45);
+fillLight.position.set(6, -2, 8);
 scene.add(fillLight);
 
 // PIVOT FOR FUTURE LONGITUDINAL (X-AXIS) ROTATION
 
 const boardRoll = new THREE.Group();
 const skateboard = new THREE.Group();
-skateboard.scale.setScalar(1.2);
 skateboard.rotation.y = Math.PI;
 boardRoll.add(skateboard);
 scene.add(boardRoll);
 
-// MAPLE MATERIALS
+// MAPLE TEXTURES
 
-function createMapleGrainTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#e6caa0";
-    ctx.fillRect(0, 0, 512, 512);
-
-    for (let i = 0; i < 70; i++) {
-        const y = Math.random() * 512;
-        const amplitude = 2 + Math.random() * 6;
-        const tone = Math.random() > 0.5 ? "214,178,122" : "250,236,208";
-        ctx.strokeStyle = `rgba(${tone},${0.2 + Math.random() * 0.3})`;
-        ctx.lineWidth = 0.6 + Math.random() * 1.4;
-        ctx.beginPath();
-        for (let x = 0; x <= 512; x += 8) {
-            const wave = Math.sin(x * 0.02 + i) * amplitude;
-            if (x === 0) {
-                ctx.moveTo(x, y + wave);
-            } else {
-                ctx.lineTo(x, y + wave);
-            }
-        }
-        ctx.stroke();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(0.15, 0.4);
-    return texture;
+function createRandom(seed) {
+    let state = seed;
+    return () => {
+        state |= 0;
+        state = (state + 0x6D2B79F5) | 0;
+        let t = Math.imul(state ^ (state >>> 15), 1 | state);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
 }
 
-const mapleCapMaterial = new THREE.MeshStandardMaterial({
-    map: createMapleGrainTexture(),
-    roughness: 0.6
+function drawGrainStreak(ctx, startX, y, length, amplitude, frequency, phase) {
+    ctx.beginPath();
+    for (let x = 0; x <= length; x += 6) {
+        const wave = Math.sin(x * frequency + phase) * amplitude;
+        if (x === 0) {
+            ctx.moveTo(startX, y + wave);
+        } else {
+            ctx.lineTo(startX + x, y + wave);
+        }
+    }
+    ctx.stroke();
+}
+
+function createMapleTextures() {
+    const width = 2048;
+    const height = 512;
+    const random = createRandom(7);
+
+    const colorCanvas = document.createElement("canvas");
+    const bumpCanvas = document.createElement("canvas");
+    colorCanvas.width = bumpCanvas.width = width;
+    colorCanvas.height = bumpCanvas.height = height;
+
+    const colorCtx = colorCanvas.getContext("2d");
+    const bumpCtx = bumpCanvas.getContext("2d");
+
+    colorCtx.fillStyle = "#ebd1a4";
+    colorCtx.fillRect(0, 0, width, height);
+    bumpCtx.fillStyle = "#808080";
+    bumpCtx.fillRect(0, 0, width, height);
+
+    for (let i = 0; i < 16; i++) {
+        const y = random() * height;
+        colorCtx.strokeStyle = `rgba(214,176,118,${0.05 + random() * 0.05})`;
+        colorCtx.lineWidth = 6 + random() * 18;
+        drawGrainStreak(colorCtx, -50, y, width + 100, 3 + random() * 8, 0.002 + random() * 0.003, random() * Math.PI * 2);
+    }
+
+    for (let i = 0; i < 900; i++) {
+        const dark = random() < 0.6;
+        const alpha = 0.04 + random() * 0.12;
+        const y = random() * height;
+        const startX = random() * width - 200;
+        const length = 300 + random() * 1100;
+        const amplitude = 0.4 + random() * 2.5;
+        const frequency = 0.004 + random() * 0.01;
+        const phase = random() * Math.PI * 2;
+        const lineWidth = 0.4 + random() * 1.5;
+
+        colorCtx.strokeStyle = dark
+            ? `rgba(180,128,74,${alpha})`
+            : `rgba(252,240,216,${alpha})`;
+        colorCtx.lineWidth = lineWidth;
+        drawGrainStreak(colorCtx, startX, y, length, amplitude, frequency, phase);
+
+        const bumpShade = dark ? 70 : 200;
+        bumpCtx.strokeStyle = `rgba(${bumpShade},${bumpShade},${bumpShade},${alpha * 2})`;
+        bumpCtx.lineWidth = lineWidth;
+        drawGrainStreak(bumpCtx, startX, y, length, amplitude, frequency, phase);
+    }
+
+    for (let i = 0; i < 6000; i++) {
+        const x = random() * width;
+        const y = random() * height;
+        const dark = random() < 0.5;
+        colorCtx.fillStyle = dark
+            ? `rgba(170,120,66,${0.02 + random() * 0.04})`
+            : `rgba(255,246,228,${0.02 + random() * 0.04})`;
+        colorCtx.fillRect(x, y, 1 + random() * 2, 1);
+    }
+
+    const colorTexture = new THREE.CanvasTexture(colorCanvas);
+    colorTexture.colorSpace = THREE.SRGBColorSpace;
+    const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
+
+    for (const texture of [colorTexture, bumpTexture]) {
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.repeat.set(1 / (2 * DECK_HALF_LENGTH), 1 / (2 * DECK_HALF_WIDTH));
+        texture.offset.set(0.5, 0.5);
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    }
+
+    return { colorTexture, bumpTexture };
+}
+
+const mapleTextures = createMapleTextures();
+
+const mapleFaceMaterial = new THREE.MeshPhysicalMaterial({
+    map: mapleTextures.colorTexture,
+    bumpMap: mapleTextures.bumpTexture,
+    bumpScale: 0.6,
+    roughness: 0.5,
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.45
 });
 
 const mapleEdgeMaterial = new THREE.MeshStandardMaterial({
-    color: 0xe0c595,
-    roughness: 0.65
-});
-
-const metalMaterial = new THREE.MeshStandardMaterial({
-    color: 0xb9bec3,
-    metalness: 0.85,
-    roughness: 0.27
-});
-
-const darkMetalMaterial = new THREE.MeshStandardMaterial({
-    color: 0x555b60,
-    metalness: 0.7,
-    roughness: 0.38
-});
-
-const wheelMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffc107,
-    roughness: 0.48
-});
-
-const bearingMaterial = new THREE.MeshStandardMaterial({
-    color: 0x3a3a3a,
-    metalness: 0.8,
-    roughness: 0.3
-});
-
-// PROCEDURAL GRIP TAPE TEXTURE
-
-const textureCanvas = document.createElement("canvas");
-textureCanvas.width = 256;
-textureCanvas.height = 256;
-
-const ctx = textureCanvas.getContext("2d");
-
-ctx.fillStyle = "#171717";
-ctx.fillRect(0, 0, 256, 256);
-
-for (let i = 0; i < 18000; i++) {
-    const shade = 22 + Math.floor(Math.random() * 35);
-    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-    ctx.fillRect(
-        Math.random() * 256,
-        Math.random() * 256,
-        1,
-        1
-    );
-}
-
-const gripTexture = new THREE.CanvasTexture(textureCanvas);
-gripTexture.colorSpace = THREE.SRGBColorSpace;
-
-const gripMaterial = new THREE.MeshStandardMaterial({
-    map: gripTexture,
-    roughness: 1,
-    side: THREE.DoubleSide
+    color: 0xd9b888,
+    roughness: 0.62
 });
 
 // DECK SHAPE
 
-function createDeckShape(inset = 0) {
-    const s = new THREE.Shape();
-
-    const halfWidth = 1.0 - inset;
-    const end = 4.45 - inset;
-    const shoulder = 3.5;
-
-    s.moveTo(-shoulder, -halfWidth);
-    s.lineTo(shoulder, -halfWidth);
-    s.quadraticCurveTo(end, -halfWidth, end, 0);
-    s.quadraticCurveTo(end, halfWidth, shoulder, halfWidth);
-    s.lineTo(-shoulder, halfWidth);
-    s.quadraticCurveTo(-end, halfWidth, -end, 0);
-    s.quadraticCurveTo(-end, -halfWidth, -shoulder, -halfWidth);
-    s.closePath();
-
-    return s;
+function deckHalfWidthAt(t) {
+    return DECK_HALF_WIDTH * Math.pow(1 - Math.pow(Math.abs(t), 6), 0.5);
 }
 
-const deckGeometry = new THREE.ExtrudeGeometry(
-    createDeckShape(),
-    {
-        depth: 0.16,
-        bevelEnabled: true,
-        bevelThickness: 0.025,
-        bevelSize: 0.025,
-        bevelSegments: 3,
-        curveSegments: 48
+function createDeckOutline() {
+    const samples = 180;
+    const outline = new THREE.Shape();
+
+    for (let i = 0; i <= samples; i++) {
+        const t = Math.sin(-Math.PI / 2 + (i / samples) * Math.PI);
+        const x = t * DECK_HALF_LENGTH;
+        const y = deckHalfWidthAt(t);
+        if (i === 0) {
+            outline.moveTo(x, y);
+        } else {
+            outline.lineTo(x, y);
+        }
     }
-);
+
+    for (let i = samples - 1; i >= 1; i--) {
+        const t = Math.sin(-Math.PI / 2 + (i / samples) * Math.PI);
+        outline.lineTo(t * DECK_HALF_LENGTH, -deckHalfWidthAt(t));
+    }
+
+    outline.closePath();
+
+    for (const truckX of [-TRUCK_CENTER_X, TRUCK_CENTER_X]) {
+        for (const dx of [-TRUCK_HOLE_SPACING_X, TRUCK_HOLE_SPACING_X]) {
+            for (const dy of [-TRUCK_HOLE_SPACING_Y, TRUCK_HOLE_SPACING_Y]) {
+                const hole = new THREE.Path();
+                hole.absarc(truckX + dx, dy, TRUCK_HOLE_RADIUS, 0, Math.PI * 2, false);
+                outline.holes.push(hole);
+            }
+        }
+    }
+
+    return outline;
+}
+
+const deckGeometry = new THREE.ExtrudeGeometry(createDeckOutline(), {
+    depth: DECK_THICKNESS,
+    bevelEnabled: true,
+    bevelThickness: DECK_BEVEL_THICKNESS,
+    bevelSize: DECK_BEVEL_SIZE,
+    bevelSegments: 4,
+    curveSegments: 24
+});
+
+const deckPositions = deckGeometry.attributes.position;
+for (let i = 0; i < deckPositions.count; i++) {
+    const kickT = Math.max(0, (Math.abs(deckPositions.getX(i)) / DECK_HALF_LENGTH - 0.55) / 0.45);
+    deckPositions.setZ(i, deckPositions.getZ(i) + DECK_KICK * kickT * kickT);
+}
+deckGeometry.computeVertexNormals();
 
 const deck = new THREE.Mesh(deckGeometry, [
-    mapleCapMaterial,
+    mapleFaceMaterial,
     mapleEdgeMaterial
 ]);
 
 skateboard.add(deck);
-
-// LAMINATION LINES
-
-const edgeGeometry = new THREE.EdgesGeometry(deckGeometry, 35);
-
-const edgeLines = new THREE.LineSegments(
-    edgeGeometry,
-    new THREE.LineBasicMaterial({
-        color: 0xb8905a,
-        transparent: true,
-        opacity: 0.35
-    })
-);
-
-skateboard.add(edgeLines);
-
-// GRIP TAPE
-
-const grip = new THREE.Mesh(
-    new THREE.ShapeGeometry(createDeckShape(0.065)),
-    gripMaterial
-);
-
-grip.position.z = 0.215;
-skateboard.add(grip);
-
-// GRIP TAPE MOUNTING BOLTS
-
-const boltGeometry = new THREE.CylinderGeometry(
-    0.038, 0.038, 0.012, 16
-);
-
-for (const x of [-2.65, 2.65]) {
-    for (const y of [-0.48, 0.48]) {
-        for (const offsetX of [-0.22, 0.22]) {
-            const bolt = new THREE.Mesh(
-                boltGeometry,
-                darkMetalMaterial
-            );
-
-            bolt.rotation.x = Math.PI / 2;
-            bolt.position.set(x + offsetX, y, 0.227);
-            skateboard.add(bolt);
-        }
-    }
-}
-
-// TRUCK GEOMETRY
-
-const baseGeometry = new THREE.BoxGeometry(
-    0.75, 0.72, 0.13
-);
-
-const hangerGeometry = new THREE.BoxGeometry(
-    0.34, 1.65, 0.24
-);
-
-const axleGeometry = new THREE.CylinderGeometry(
-    0.075, 0.075, 2.8, 24
-);
-
-const supportGeometry = new THREE.CylinderGeometry(
-    0.14, 0.19, 0.48, 20
-);
-
-const wheelGeometry = new THREE.CylinderGeometry(
-    0.35, 0.35, 0.31, 40
-);
-
-const bearingGeometry = new THREE.CylinderGeometry(
-    0.105, 0.105, 0.322, 24
-);
-
-function createTruck(x) {
-    const truck = new THREE.Group();
-    truck.position.x = x;
-
-    const base = new THREE.Mesh(
-        baseGeometry,
-        darkMetalMaterial
-    );
-    base.position.z = -0.15;
-    truck.add(base);
-
-    const support = new THREE.Mesh(
-        supportGeometry,
-        metalMaterial
-    );
-    support.rotation.x = Math.PI / 2;
-    support.position.z = -0.43;
-    truck.add(support);
-
-    const hanger = new THREE.Mesh(
-        hangerGeometry,
-        metalMaterial
-    );
-    hanger.position.z = -0.68;
-    truck.add(hanger);
-
-    const axle = new THREE.Mesh(
-        axleGeometry,
-        darkMetalMaterial
-    );
-    axle.position.z = -0.68;
-    truck.add(axle);
-
-    for (const side of [-1, 1]) {
-        const wheel = new THREE.Mesh(
-            wheelGeometry,
-            wheelMaterial
-        );
-
-        wheel.position.set(
-            0,
-            side * 1.24,
-            -0.68
-        );
-
-        truck.add(wheel);
-
-        const bearing = new THREE.Mesh(
-            bearingGeometry,
-            bearingMaterial
-        );
-
-        bearing.position.copy(wheel.position);
-        truck.add(bearing);
-    }
-
-    skateboard.add(truck);
-}
-
-createTruck(-2.65);
-createTruck(2.65);
 
 // FITTING THE DECK TO THE STAGE
 
@@ -337,7 +252,7 @@ function fitDeckToStage() {
     renderer.setSize(width, height);
     camera.aspect = width / height;
 
-    const visibleWidth = DECK_LENGTH / deckWidthRatio;
+    const visibleWidth = (2 * DECK_HALF_LENGTH) / deckWidthRatio;
     const visibleHeight = visibleWidth / camera.aspect;
     const distance = (visibleHeight / 2) / Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2));
 
